@@ -2,7 +2,7 @@ export type Practice = {
  id:string; name:string; agent:string; state:string; measure:string; kind:'R'|'S'; source:'Excel'|'Leadora'|'Manuale';
  customerCode:string; contractCode:string; contactId:string; description:string; customerType:string; partner:string; list:string;
  power:number|null; storage:number|null; panel:string; battery:string; quantity:number|null;
- amount:number|null; probability:number|null; closeDate:string; marginDate:string; cost:number|null; commissionRate:number|null;
+ amount:number|null; probability:number|null; closeDate:string; marginDate:string; cost:number|null; commissionRate:number|null; taxable:number|null; secondMarginPercent:number|null;
  historical:null|{contract:number; cost:number; margin:number; commission:number; secondMargin:number|null};
  revenues:{date:string;amount:number;number:string;sourceRow:number}[]; row:number|null; review:string[];
 };
@@ -18,7 +18,7 @@ export const euro=(value:unknown):number|null=>{
  const cents=Number(whole)*100+Number(dec.padEnd(2,'0'));if(!Number.isSafeInteger(cents))throw new Error('Importo troppo grande');return neg?-cents:cents;
 };
 export function isoDate(value:unknown):string{if(value==null||value==='')return '';let s=String(value);if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)){const [d,m,y]=s.split('/');s=`${y}-${m}-${d}`;}if(!/^\d{4}-\d{2}-\d{2}$/.test(s)||new Date(s+'T00:00:00Z').toISOString().slice(0,10)!==s)throw new Error('Data non valida');return s;}
-export const blankPractice=(id:string):Practice=>({id,name:'',agent:'',state:'IN TRATTATIVA',measure:'',kind:'S',source:'Manuale',customerCode:'',contractCode:'',contactId:'',description:'',customerType:'',partner:'',list:'',power:null,storage:null,panel:'',battery:'',quantity:1,amount:null,probability:null,closeDate:'',marginDate:'',cost:null,commissionRate:8,historical:null,revenues:[],row:null,review:[]});
+export const blankPractice=(id:string):Practice=>({id,name:'',agent:'',state:'IN TRATTATIVA',measure:'',kind:'S',source:'Manuale',customerCode:'',contractCode:'',contactId:'',description:'',customerType:'',partner:'',list:'',power:null,storage:null,panel:'',battery:'',quantity:1,amount:null,probability:null,closeDate:'',marginDate:'',cost:null,commissionRate:8,taxable:null,secondMarginPercent:null,historical:null,revenues:[],row:null,review:[]});
 export function weighted(p:Practice){return p.amount==null||p.probability==null?null:Math.round(p.amount*p.probability/100);}
 export function forecastDate(p:Practice){if(!p.closeDate)return '';const d=new Date(p.closeDate+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+35);return d.toISOString().slice(0,10);}
 export function metrics(p:Practice){if(p.historical)return p.historical;const contract=weighted(p);const cost=p.cost??(contract==null?null:Math.round(contract*.8));const margin=contract==null||cost==null?null:contract-cost;const commission=contract==null||p.commissionRate==null?null:Math.round(contract*p.commissionRate/100);return {contract,cost,margin,commission,secondMargin:margin==null||commission==null?null:margin-commission};}
