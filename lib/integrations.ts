@@ -1,4 +1,5 @@
 import {blankPractice,euro,isoDate,type Practice,type Invoice} from './model';
+const addMonths=(base:Date,n:number)=>{const d=new Date(Date.UTC(base.getUTCFullYear(),base.getUTCMonth()+n,1));return d.toISOString().slice(0,10)};
 const str=(v:unknown)=>typeof v==='string'?v.trim():'';
 const field=(raw:Record<string,any>,name:string)=>{
  const templated=`{{opportunity.${name}}}`;
@@ -20,6 +21,13 @@ export function parseLeadora(raw:Record<string,any>,existing?:Practice){
  if(Object.hasOwn(raw,'lead_value'))p.amount=euro(raw.lead_value);
  if(field(raw,'_di_chiusura')!==undefined)p.probability=Number(field(raw,'_di_chiusura'));
  if(p.probability!==null)p.kind=p.probability>=100?'R':'S';
+ if(!existing)p.closeDate=addMonths(new Date(),2);
+ const weighted=p.amount!=null&&p.probability!=null?Math.round(p.amount*p.probability/100):null;
+ if(weighted!=null){
+  p.taxable=Math.round(weighted/1.1);
+  p.marginDate=addMonths(new Date(p.closeDate+'T00:00:00Z'),1);
+  if(!p.revenues.length)p.revenues=[{date:p.marginDate,amount:weighted,number:'',sourceRow:0}];
+ }
  if(Object.hasOwn(raw,'forecast_expected_close_date'))p.closeDate=isoDate(raw.forecast_expected_close_date);
  // No guessed field paths: source, user and Enerp descriptions never replace the description.
  p.review=[...new Set([...p.review,'Agente Leadora da verificare','Collegamento storico da verificare'])];
