@@ -24,7 +24,7 @@ export default function Workspace(){
  const invoices=useMemo(()=>data.entities.filter(e=>e.kind==='invoice').map(e=>e.data as Invoice),[data.entities]);
  const filtered=useMemo(()=>practices.filter(p=>(!query||[p.name,p.agent,p.customerCode,p.contractCode].join(' ').toLowerCase().includes(query.toLowerCase()))&&(!measure||p.measure===measure)&&(!agent||p.agent===agent)&&(!kind||p.kind===kind)&&(!onlyMissing||missing(p).length>0)),[practices,query,measure,agent,kind,onlyMissing]);
  const open=(p:Practice)=>setEditor({practice:p,version:data.entities.find(e=>e.id===p.id)?.version||0});
- const save=async(p:Practice,v:number)=>{const result=await post({action:'save',id:p.id.startsWith('new:')?undefined:p.id,version:v,fields:p});await load();setMessage(result.message??'Pratica salvata.')};
+ const save=async(p:Practice,v:number)=>{const result=await post({action:'save',id:p.id.startsWith('new:')?undefined:p.id,version:v,fields:p});const remove=async(p:Practice)=>{const result=await post({action:'delete',id:p.id});await load();setMessage(result.message??'Pratica eliminata.')};await load();setMessage(result.message??'Pratica salvata.')};
  const action=async(body:unknown)=>{setBusy(true);setMessage('');try{const r=await post(body);setMessage(r.message??'Operazione completata.');await load()}catch(e){setError(e instanceof Error?e.message:'Operazione non riuscita')}finally{setBusy(false)}};
  const entries=reportSource==='reference'?reference.filter(e=>e.mode===reportMode):reportEntries(practices.filter(p=>(!measure||p.measure===measure)&&(!agent||p.agent===agent)&&(!kind||p.kind===kind)),reportMode);
  const selectedEntries=entries.filter(e=>year==='all'||e.date.startsWith(year));

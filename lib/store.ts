@@ -11,3 +11,6 @@ export async function insertEvent(source:string,summary:string){await request('e
 export async function setSetting(name:string,value:string){await request('settings?on_conflict=key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({key:name,value})})}
 export async function getRecord(id:string){const rows=await request(`records?select=id,kind,data,version&id=eq.${encodeURIComponent(id)}&limit=1`) as Row[];return rows[0]??null}
 export async function saveRecord(row:Row,expectedVersion?:number){const current=await getRecord(row.id);if(expectedVersion!=null&&(current?.version??0)!==expectedVersion)throw new Error('La pratica è cambiata. Ricarica prima di salvare.');const next={...row,version:(current?.version??0)+1};await upsertRecords([next]);return next}
+
+export async function deleteRecord(id:string){await request(`records?id=eq.${encodeURIComponent(id)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}})}
+
