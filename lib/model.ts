@@ -9,7 +9,7 @@ export type Practice = {
 export type Invoice={id:string;number:string;date:string;dueDate:string;customerCode:string;customerName:string;contractCode:string;total:number;net:number;tax:number;balance:number|null;paid:boolean|null;practiceId:string|null;source:'Excel'|'Enerp';review:string[]};
 export type Entity={id:string;kind:'practice'|'invoice'|'contact';data:Practice|Invoice|Record<string,unknown>;version:number};
 export type Snapshot={entities:Entity[];events:{id:string;source:string;summary:string;createdAt:string}[];seedAvailable:boolean};
-export const money=(cents:number|null|undefined)=>cents==null?'—':new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR',maximumFractionDigits:2}).format(cents/100);
+export const money=(cents:number|null|undefined)=>{if(cents==null)return '—';const value=(cents/100).toFixed(2);const [whole,dec]=value.split('.');const grouped=whole.replace(/\B(?=(\d{3})+(?!\d))/g,'.');return `${grouped},${dec} €`;};
 export const euro=(value:unknown):number|null=>{
  if(value==null||value==='')return null;
  let s=String(value).trim(); if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');
