@@ -19,6 +19,7 @@ export function parseLeadora(raw:Record<string,any>,existing?:Practice){
  if(Object.hasOwn(raw,'pipleline_stage'))p.state=str(raw.pipleline_stage);
  if(Object.hasOwn(raw,'lead_value'))p.amount=euro(raw.lead_value);
  if(field(raw,'_di_chiusura')!==undefined)p.probability=Number(field(raw,'_di_chiusura'));
+ if(p.probability!==null)p.kind=p.probability>=100?'R':'S';
  if(Object.hasOwn(raw,'forecast_expected_close_date'))p.closeDate=isoDate(raw.forecast_expected_close_date);
  // No guessed field paths: source, user and Enerp descriptions never replace the description.
  p.review=[...new Set([...p.review,'Agente Leadora da verificare','Collegamento storico da verificare'])];
