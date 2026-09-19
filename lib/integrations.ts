@@ -4,7 +4,11 @@ const str=(v:unknown)=>typeof v==='string'?v.trim():'';
 const field=(raw:Record<string,any>,name:string)=>{
  const templated=`{{opportunity.${name}}}`;
  const candidates=[raw[name],raw.opportunity?.[name],raw.customData?.[name],raw.customData?.[templated],raw.customData?.opportunity?.[name],raw.customData?.fields?.[name],raw.customData?.fields?.[templated]];
- return candidates.find(v=>v!==undefined&&v!==null&&v!=='');
+ const direct=candidates.find(v=>v!==undefined&&v!==null&&v!=='');if(direct!==undefined)return direct;
+ const all={...raw,...(raw.customData||{})};
+ const wanted=`opportunity.${name}`.toLowerCase();
+ const found=Object.entries(all).find(([k,v])=>k.replace(/[{}]/g,'').toLowerCase()===wanted&&v!==undefined&&v!==null&&v!=='');
+ return found?.[1];
 };
 export function parseLeadora(raw:Record<string,any>,existing?:Practice){
  const location=str(raw.location?.id),contact=str(raw.contact_id);if(!location||!contact)throw new Error('Servono location.id e contact_id');
