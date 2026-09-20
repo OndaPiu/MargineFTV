@@ -45,5 +45,6 @@ export function parseEnerp(raw:Record<string,unknown>):Invoice|null{
  const total=euro(raw.TOTALE),net=euro(raw.IMPONIBILE),tax=euro(raw.IVA),balance=euro(raw.TOTALE_PARTITARIO_CRAI);
  if(total==null||net==null||tax==null)throw new Error('Totale, imponibile e IVA sono obbligatori');
  const date=isoDate(raw.DATA_EMISSIONE);if(!date)throw new Error('Data emissione mancante');
- return {id:`enerp:document:${doc}`,number,date,dueDate:isoDate(raw.DATA_SCADENZA),customerCode:str(raw.CODICE_CLIENTE),customerName:str(raw.RAGIONE_SOCIALE),contractCode:str(raw.CODICE_CONTRATTO),total,net,tax,balance,paid:balance==null?null:balance===0,practiceId:null,source:'Enerp',review:total!==net+tax?['Imponibile + IVA diversi dal totale']:[]};
+ return {id:`enerp:document:${doc}`,number,date,dueDate:isoDate(raw.DATA_SCADENZA),customerCode:str(raw.CODICE_CLIENTE),customerName:str(raw.RAGIONE_SOCIALE),contractCode:str(raw.CODICE_CONTRATTO),total,net,tax,balance,paid:balance==null?null:balance<=0,practiceId:null,source:'Enerp',review:total!==net+tax?['Imponibile + IVA diversi dal totale']:[]};
 }
+
