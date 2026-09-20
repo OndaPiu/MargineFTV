@@ -1,1 +1,2 @@
-import type { Metadata } from 'next'; import './globals.css'; export const metadata: Metadata={title:'Onda FTV | Pratiche e margini',description:'Gestione delle pratiche fotovoltaiche e report economici.',icons:{icon:'/favicon.svg'}}; export default function Layout({children}:{children:React.ReactNode}){return <html lang="it"><body>{children}</body></html>}
+import type { Metadata } from 'next'; import './globals.css'; export const metadata: Metadata={title:'Onda FTV | Pratiche e margini',description:'Gestione delle pratiche fotovoltaiche e report economici.',icons:{icon:'/favicon.png'}}; export default function Layout({children}:{children:React.ReactNode}){return <html lang="it"><body>{children}</body></html>}
+
