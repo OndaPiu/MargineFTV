@@ -16,3 +16,4 @@
 .brand img{display:block;width:160px;height:auto;max-height:58px;object-fit:contain;object-position:left center}.secondary:hover,.text-button:hover{border-color:#ff8c00;color:#0056b3;background:#fff7ed}.brand-accent{color:#ff8c00}.brand svg{color:#ff8c00}.attention-icon{color:#ff8c00}.status.real{background:#fff0df;color:#b85f00}
 
 
+.report-bars{height:210px;display:flex;align-items:flex-end;gap:10px;padding:10px 4px 0;overflow-x:auto}.report-bar-column{flex:1;min-width:48px;height:190px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:7px;font-size:11px;color:#65777a}.report-bar{width:28px;min-height:2px;border-radius:5px 5px 0 0}.report-bar.blue{background:#0056b3}.report-bar.orange{background:#ff8c00}.report-bar-value{font-size:10px;color:#0056b3;white-space:nowrap}.report-chart{margin-top:22px}
