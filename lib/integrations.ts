@@ -26,6 +26,7 @@ export function parseLeadora(raw:Record<string,any>,existing?:Practice){
  if(field(raw,'_di_chiusura')!==undefined)p.probability=Number(field(raw,'_di_chiusura'));
  if(p.probability!==null)p.kind=p.probability>=100?'R':'S';
  if(!existing)p.closeDate=addMonths(new Date(),2);
+ if(!p.marginDate&&p.closeDate)p.marginDate=addMonths(new Date(p.closeDate+'T00:00:00Z'),1);
  const weighted=p.amount!=null&&p.probability!=null?Math.round(p.amount*p.probability/100):null;
  if(weighted!=null){
   p.taxable=Math.round(weighted/1.1);
