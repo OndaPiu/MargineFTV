@@ -31,6 +31,7 @@ export function parseLeadora(raw:Record<string,any>,existing?:Practice){
  if(weighted!=null){
   p.taxable=Math.round(weighted/1.1);
   const provisionalCost=p.cost??Math.round(weighted*.8), provisionalCommission=Math.round(weighted*(p.commissionRate??8)/100), provisionalSecond=weighted-provisionalCost-provisionalCommission;
+  if(p.cost==null)p.cost=provisionalCost;
   p.secondMarginPercent=Number((provisionalSecond/p.taxable*100).toFixed(4));
   p.marginDate=addMonths(new Date(p.closeDate+'T00:00:00Z'),1);
   if(!p.revenues.length)p.revenues=[{date:p.marginDate,amount:weighted,number:'',sourceRow:0}];
