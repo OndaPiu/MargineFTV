@@ -23,7 +23,8 @@ export function parseLeadora(raw:Record<string,any>,existing?:Practice){
  if(field(raw,'codice_cliente_ondapiu')!==undefined)p.customerCode=str(field(raw,'codice_cliente_ondapiu'));
  if(Object.hasOwn(raw,'pipleline_stage'))p.state=str(raw.pipleline_stage);
  if(Object.hasOwn(raw,'lead_value'))p.amount=euro(raw.lead_value);
- if(field(raw,'_di_chiusura')!==undefined)p.probability=Number(field(raw,'_di_chiusura'));
+ const rawProbability=field(raw,'_di_chiusura');
+ if(rawProbability!==undefined){const parsed=Number(String(rawProbability).replace('%','').replace(',','.').trim());if(Number.isFinite(parsed))p.probability=parsed;}
  if(p.probability!==null)p.kind=p.probability>=100?'R':'S';
  if(!existing)p.closeDate=addMonths(new Date(),2);
  if(!p.marginDate&&p.closeDate)p.marginDate=addMonths(new Date(p.closeDate+'T00:00:00Z'),1);
