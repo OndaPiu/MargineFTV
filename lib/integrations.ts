@@ -17,7 +17,8 @@ export function parseLeadora(raw:Record<string,any>,existing?:Practice){
  const id=`leadora:${location}:opportunity:${str(raw.id)}`;const p:Practice=existing?structuredClone(existing):blankPractice(id);
  p.id=id;p.source='Leadora';p.contactId=contact;
  if(Object.hasOwn(raw,'opportunity_name'))p.name=str(raw.opportunity_name);
- if(Object.hasOwn(raw,'owner'))p.agent=str(raw.owner);
+ const assignedTo=field(raw,'assigned_to');
+ if(assignedTo!==undefined)p.agent=str(assignedTo);
  if(field(raw,'fornitore')!==undefined)p.partner=str(field(raw,'fornitore'));
  if(field(raw,'misura')!==undefined)p.measure=str(field(raw,'misura'));
  if(field(raw,'codice_cliente_ondapiu')!==undefined)p.customerCode=str(field(raw,'codice_cliente_ondapiu'));
