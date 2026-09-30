@@ -1,4 +1,4 @@
-import {blankPractice,euro,isoDate,type Practice,type Invoice} from './model';
+import {blankPractice,euro,isoDate,practiceStatus,type Practice,type Invoice} from './model';
 const addMonths=(base:Date,n:number)=>{const d=new Date(Date.UTC(base.getUTCFullYear(),base.getUTCMonth()+n,1));return d.toISOString().slice(0,10)};
 const str=(v:unknown)=>typeof v==='string'?v.trim():'';
 const field=(raw:Record<string,any>,name:string)=>{
@@ -21,7 +21,7 @@ export function parseLeadora(raw:Record<string,any>,existing?:Practice){
  if(field(raw,'fornitore')!==undefined)p.partner=str(field(raw,'fornitore'));
  if(field(raw,'misura')!==undefined)p.measure=str(field(raw,'misura'));
  if(field(raw,'codice_cliente_ondapiu')!==undefined)p.customerCode=str(field(raw,'codice_cliente_ondapiu'));
- if(Object.hasOwn(raw,'status'))p.practiceStatus=str(raw.status);
+ if(Object.hasOwn(raw,'status'))p.practiceStatus=practiceStatus(raw.status);
  if(Object.hasOwn(raw,'pipleline_stage'))p.state=str(raw.pipleline_stage);
  if(Object.hasOwn(raw,'lead_value'))p.amount=euro(raw.lead_value);
  const rawProbability=field(raw,'_di_chiusura');
