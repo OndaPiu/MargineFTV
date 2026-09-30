@@ -21,6 +21,7 @@ export function parseLeadora(raw:Record<string,any>,existing?:Practice){
  if(field(raw,'fornitore')!==undefined)p.partner=str(field(raw,'fornitore'));
  if(field(raw,'misura')!==undefined)p.measure=str(field(raw,'misura'));
  if(field(raw,'codice_cliente_ondapiu')!==undefined)p.customerCode=str(field(raw,'codice_cliente_ondapiu'));
+ if(Object.hasOwn(raw,'status'))p.practiceStatus=str(raw.status);
  if(Object.hasOwn(raw,'pipleline_stage'))p.state=str(raw.pipleline_stage);
  if(Object.hasOwn(raw,'lead_value'))p.amount=euro(raw.lead_value);
  const rawProbability=field(raw,'_di_chiusura');
@@ -50,4 +51,3 @@ export function parseEnerp(raw:Record<string,unknown>):Invoice|null{
  const date=isoDate(raw.DATA_EMISSIONE);if(!date)throw new Error('Data emissione mancante');
  return {id:`enerp:document:${doc}`,number,date,dueDate:isoDate(raw.DATA_SCADENZA),customerCode:str(raw.CODICE_CLIENTE),customerName:str(raw.RAGIONE_SOCIALE),contractCode:str(raw.CODICE_CONTRATTO),total,net,tax,balance,paid:balance==null?null:balance<=0,practiceId:null,source:'Enerp',review:total!==net+tax?['Imponibile + IVA diversi dal totale']:[]};
 }
-
