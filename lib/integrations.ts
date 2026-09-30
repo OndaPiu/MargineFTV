@@ -1,6 +1,16 @@
 import {blankPractice,euro,isoDate,practiceStatus,type Practice,type Invoice} from './model';
 const addMonths=(base:Date,n:number)=>{const d=new Date(Date.UTC(base.getUTCFullYear(),base.getUTCMonth()+n,1));return d.toISOString().slice(0,10)};
 const str=(v:unknown)=>typeof v==='string'?v.trim():'';
+const assignee=(v:unknown):string=>{
+ if(typeof v==='string')return v.trim();
+ if(Array.isArray(v))return v.map(assignee).filter(Boolean).join(', ');
+ if(v&&typeof v==='object'){
+  const o=v as Record<string,unknown>;
+  const full=[str(o.firstName),str(o.lastName)].filter(Boolean).join(' ');
+  return [str(o.name),str(o.fullName),str(o.full_name),str(o.label),str(o.value),full,str(o.email)].find(Boolean)||'';
+ }
+ return '';
+};
 const field=(raw:Record<string,any>,name:string)=>{
  const templated=`{{opportunity.${name}}}`;
  const candidates=[raw[name],raw.opportunity?.[name],raw.customData?.[name],raw.customData?.[templated],raw.customData?.opportunity?.[name],raw.customData?.fields?.[name],raw.customData?.fields?.[templated]];
@@ -18,7 +28,7 @@ export function parseLeadora(raw:Record<string,any>,existing?:Practice){
  p.id=id;p.source='Leadora';p.contactId=contact;
  if(Object.hasOwn(raw,'opportunity_name'))p.name=str(raw.opportunity_name);
  const assignedTo=field(raw,'assigned_to');
- if(assignedTo!==undefined)p.agent=str(assignedTo);
+ if(assignedTo!==undefined)p.agent=assignee(assignedTo);
  if(field(raw,'fornitore')!==undefined)p.partner=str(field(raw,'fornitore'));
  if(field(raw,'misura')!==undefined)p.measure=str(field(raw,'misura'));
  if(field(raw,'codice_cliente_ondapiu')!==undefined)p.customerCode=str(field(raw,'codice_cliente_ondapiu'));
