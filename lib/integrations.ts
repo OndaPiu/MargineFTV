@@ -13,7 +13,8 @@ const assignee=(v:unknown):string=>{
 };
 const field=(raw:Record<string,any>,name:string)=>{
  const templated=`{{opportunity.${name}}}`;
- const candidates=[raw[name],raw.opportunity?.[name],raw.customData?.[name],raw.customData?.[templated],raw.customData?.opportunity?.[name],raw.customData?.fields?.[name],raw.customData?.fields?.[templated]];
+ const dotted=`opportunity.${name}`;
+ const candidates=[raw[name],raw[dotted],raw.opportunity?.[name],raw.customData?.[name],raw.customData?.[dotted],raw.customData?.[templated],raw.customData?.opportunity?.[name],raw.customData?.fields?.[name],raw.customData?.fields?.[dotted],raw.customData?.fields?.[templated]];
  const direct=candidates.find(v=>v!==undefined&&v!==null&&v!=='');if(direct!==undefined)return direct;
  const all={...raw,...(raw.customData||{})};
  const wanted=`opportunity.${name}`.toLowerCase();
