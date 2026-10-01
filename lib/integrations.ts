@@ -1,4 +1,4 @@
-import {blankPractice,euro,isoDate,practiceStatus,type Practice,type Invoice} from './model';
+import {applyPracticeStatusRules,blankPractice,euro,isoDate,practiceStatus,type Practice,type Invoice} from './model';
 const addMonths=(base:Date,n:number)=>{const d=new Date(Date.UTC(base.getUTCFullYear(),base.getUTCMonth()+n,1));return d.toISOString().slice(0,10)};
 const str=(v:unknown)=>typeof v==='string'?v.trim():'';
 const assignee=(v:unknown):string=>{
@@ -39,6 +39,7 @@ export function parseLeadora(raw:Record<string,any>,existing?:Practice){
  const rawProbability=field(raw,'_di_chiusura');
  if(rawProbability!==undefined){const parsed=Number(String(rawProbability).replace('%','').replace(',','.').trim());if(Number.isFinite(parsed))p.probability=parsed;}
  if(p.probability!==null)p.kind=p.probability>=100?'R':'S';
+ Object.assign(p,applyPracticeStatusRules(p));
  if(!existing)p.closeDate=addMonths(new Date(),2);
  if(!p.marginDate&&p.closeDate)p.marginDate=addMonths(new Date(p.closeDate+'T00:00:00Z'),1);
  const weighted=p.amount!=null&&p.probability!=null?Math.round(p.amount*p.probability/100):null;
