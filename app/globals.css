@@ -21,3 +21,5 @@
 .report-percent{display:block;font-size:11px;color:#687588;font-weight:400;margin-top:4px}
 
 .report-final{background:#e8f2ed!important}.report-forecast{background:#fff2df!important}.report-normal{background:#fafbfc!important}
+
+.report-table th.report-final,.report-table td.report-final{background:#cfe9dc!important;color:#174f3b}.report-table th.report-forecast,.report-table td.report-forecast{background:#ffe0ad!important;color:#754200}.report-table th.report-final{border-bottom:3px solid #218c62}.report-table th.report-forecast{border-bottom:3px solid #e08b17}
