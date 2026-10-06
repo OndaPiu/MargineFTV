@@ -17,3 +17,7 @@
 
 
 .report-bars{height:210px;display:flex;align-items:flex-end;gap:10px;padding:10px 4px 0;overflow-x:auto}.report-bar-column{flex:1;min-width:48px;height:190px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:7px;font-size:11px;color:#65777a}.report-bar{width:28px;min-height:2px;border-radius:5px 5px 0 0}.report-bar.blue{background:#0056b3}.report-bar.orange{background:#ff8c00}.report-bar-value{font-size:10px;color:#0056b3;white-space:nowrap}.report-chart{margin-top:22px}
+
+.report-percent{display:block;font-size:11px;color:#687588;font-weight:400;margin-top:4px}
+
+.report-final{background:#e8f2ed!important}.report-forecast{background:#fff2df!important}.report-normal{background:#fafbfc!important}
