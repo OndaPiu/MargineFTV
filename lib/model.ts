@@ -6,7 +6,7 @@ export type Practice = {
  historical:null|{contract:number; cost:number; margin:number; commission:number; secondMargin:number|null};
  revenues:{date:string;amount:number;number:string;sourceRow:number}[]; row:number|null; review:string[];
 };
-export type Invoice={id:string;number:string;date:string;dueDate:string;customerCode:string;customerName:string;contractCode:string;total:number;net:number;tax:number;balance:number|null;paid:boolean|null;practiceId:string|null;source:'Excel'|'Enerp';review:string[]};
+export type Invoice={id:string;number:string;date:string;dueDate:string;customerCode:string;customerName:string;contractCode:string;total:number;net:number;tax:number;balance:number|null;paid:boolean|null;practiceId:string|null;source:'Excel'|'Enerp'|'Manuale';review:string[]};
 export type Entity={id:string;kind:'practice'|'invoice'|'contact';data:Practice|Invoice|Record<string,unknown>;version:number};
 export type Snapshot={entities:Entity[];events:{id:string;source:string;summary:string;createdAt:string}[];seedAvailable:boolean};
 export const money=(cents:number|null|undefined)=>{if(cents==null)return '—';const value=(cents/100).toFixed(2);const [whole,dec]=value.split('.');const grouped=whole.replace(/\B(?=(\d{3})+(?!\d))/g,'.');return `${grouped},${dec} €`;};
@@ -32,4 +32,5 @@ export function missing(p:Practice){return [!p.agent&&'Agente',!p.measure&&'Misu
 export function reportEntries(practices:Practice[],mode:'contract'|'revenue'|'margin'|'secondMargin'){
  return practices.flatMap(p=>{const m=metrics(p);const base={practiceId:p.id,measure:p.measure||'Da classificare',kind:p.kind};if(mode==='contract')return m.contract==null?[]:[{...base,date:p.closeDate,amount:m.contract}];if(mode==='margin')return m.margin==null?[]:[{...base,date:p.marginDate||forecastDate(p),amount:m.margin}];if(mode==='secondMargin')return m.secondMargin==null?[]:[{...base,date:p.marginDate||forecastDate(p),amount:m.secondMargin}];return p.historical?p.revenues.map(r=>({...base,date:r.date,amount:r.amount})):m.contract==null?[]:[{...base,date:forecastDate(p),amount:m.contract}];});
 }
+
 
