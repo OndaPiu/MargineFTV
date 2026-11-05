@@ -29,8 +29,50 @@ export function forecastDate(p:Practice){if(!p.closeDate)return '';const d=new D
 export function metrics(p:Practice){if(p.historical)return p.historical;const contract=weighted(p);const legacyNominalCost=p.amount!=null&&p.cost===Math.round(p.amount*.8);const cost=contract==null?null:(p.cost==null||legacyNominalCost?Math.round(contract*.8):p.cost);const margin=contract==null||cost==null?null:contract-cost;const commission=p.commission??(contract==null||p.commissionRate==null?null:Math.round(contract*p.commissionRate/100));return {contract,cost,margin,commission,secondMargin:margin==null||commission==null?null:margin-commission};}
 export function calculatedSecondMarginPercent(p:Practice){const m=metrics(p);return p.taxable&&m.secondMargin!=null?Number((m.secondMargin/p.taxable*100).toFixed(4)):null;}
 export function missing(p:Practice){return [!p.agent&&'Agente',!p.measure&&'Misura',p.probability==null&&'Probabilità',!p.description&&'Descrizione',!p.contractCode&&'Riferimento Enerp',...p.review].filter(Boolean) as string[];}
-export function reportEntries(practices:Practice[],mode:'contract'|'revenue'|'margin'|'secondMargin'){
- return practices.flatMap(p=>{const m=metrics(p);const base={practiceId:p.id,measure:p.measure||'Da classificare',kind:p.kind};if(mode==='contract')return m.contract==null?[]:[{...base,date:p.closeDate,amount:m.contract}];if(mode==='margin')return m.margin==null?[]:[{...base,date:p.marginDate||forecastDate(p),amount:m.margin}];if(mode==='secondMargin')return m.secondMargin==null?[]:[{...base,date:p.marginDate||forecastDate(p),amount:m.secondMargin}];return p.historical?p.revenues.map(r=>({...base,date:r.number?r.date:forecastDate(p),amount:r.amount})):m.contract==null?[]:[{...base,date:forecastDate(p),amount:m.contract}];});
+const reportEntryBase=(p:Practice)=>({practiceId:p.id,measure:p.measure||'Da classificare',kind:p.kind});
+
+export function reportEntries(practices:Practice[],mode:'contract'|'margin'|'secondMargin'){
+ return practices.flatMap(p=>{
+  const amount=metrics(p)[mode];
+  if(amount==null)return [];
+  const date=mode==='contract'?p.closeDate:p.marginDate||forecastDate(p);
+  return [{...reportEntryBase(p),date,amount}];
+ });
+}
+
+const invoiceKey=(number:string,date:string)=>date.slice(0,4)+':'+number.trim().toUpperCase();
+
+export function revenueReportEntries(practices:Practice[],invoices:Invoice[]){
+ const invoicesByPractice=new Map<string,Invoice[]>();
+ for(const invoice of invoices){
+  if(!invoice.practiceId)continue;
+  const linked=invoicesByPractice.get(invoice.practiceId);
+  if(linked)linked.push(invoice);
+  else invoicesByPractice.set(invoice.practiceId,[invoice]);
+ }
+
+ return practices.flatMap(p=>{
+  const base=reportEntryBase(p);
+  const linked=invoicesByPractice.get(p.id)??[];
+  const enerpKeys=new Set(linked.filter(i=>i.source==='Enerp').map(i=>invoiceKey(i.number,i.date)));
+  const current=linked.filter(i=>i.source!=='Excel'||!enerpKeys.has(invoiceKey(i.number,i.date)));
+  const linkedKeys=new Set(current.map(i=>invoiceKey(i.number,i.date)));
+  const actual=current.map(i=>({...base,date:i.date,amount:i.total}));
+
+  // Preserve historical invoices that have not been replaced by a linked document.
+  for(const row of p.historical?(p.revenues??[]):[]){
+   if(row.number?.trim()&&!linkedKeys.has(invoiceKey(row.number,row.date))){
+    actual.push({...base,date:row.date,amount:row.amount});
+   }
+  }
+
+  const contract=metrics(p).contract;
+  const billed=actual.reduce((total,row)=>total+row.amount,0);
+  if(contract!=null&&contract>billed){
+   actual.push({...base,date:forecastDate(p),amount:contract-billed});
+  }
+  return actual;
+ });
 }
 
 

@@ -1,0 +1,72 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { blankPractice, reportEntries, revenueReportEntries } from '../lib/model.ts';
+
+const practice = {
+  ...blankPractice('practice-1'),
+  amount: 2_400_000,
+  probability: 50,
+  closeDate: '2026-10-30',
+};
+
+const invoice = (number, date, total, overrides = {}) => ({
+  number, date, total, practiceId: practice.id, source: 'Enerp', ...overrides,
+});
+const first = invoice('300-1', '2026-11-18', 400_000);
+const second = invoice('300-2', '2026-12-01', 400_000, { source: 'Manuale' });
+const last = invoice('300-3', '2026-12-10', 400_000);
+
+const amounts = (invoices, p = practice) =>
+  revenueReportEntries([p], invoices).map(({ date, amount }) => [date, amount]);
+
+test('forecasts the probability-weighted contract and moves it when the close date changes', () => {
+  assert.deepEqual(amounts([]), [['2026-12-04', 1_200_000]]);
+  assert.deepEqual(amounts([], { ...practice, closeDate: '2026-11-01' }), [['2026-12-06', 1_200_000]]);
+});
+
+test('allocates each invoice and leaves only the remainder on the forecast date', () => {
+  assert.deepEqual(amounts([first]), [['2026-11-18', 400_000], ['2026-12-04', 800_000]]);
+  assert.deepEqual(amounts([first, second]), [
+    ['2026-11-18', 400_000], ['2026-12-01', 400_000], ['2026-12-04', 400_000],
+  ]);
+  assert.deepEqual(amounts([first, second, last]), [
+    ['2026-11-18', 400_000], ['2026-12-01', 400_000], ['2026-12-10', 400_000],
+  ]);
+});
+
+test('credit notes reduce actuals and reopen a forecast, while overbilling creates no negative forecast', () => {
+  const credit = invoice('300-4', '2026-12-12', -100_000);
+  assert.deepEqual(amounts([first, second, last, credit]).slice(-2), [
+    ['2026-12-12', -100_000], ['2026-12-04', 100_000],
+  ]);
+  assert.deepEqual(amounts([invoice('300-5', '2026-11-18', 1_300_000)]), [['2026-11-18', 1_300_000]]);
+});
+
+test('includes linked actuals without an estimate and ignores unlinked invoices', () => {
+  assert.deepEqual(amounts([first, { ...last, practiceId: null }], { ...practice, probability: null }), [
+    ['2026-11-18', 400_000],
+  ]);
+  assert.deepEqual(amounts([first], { ...practice, closeDate: '' }), [
+    ['2026-11-18', 400_000], ['', 800_000],
+  ]);
+});
+
+test('keeps historical documents, replaces Excel duplicates, and recalculates the historical forecast', () => {
+  const historical = {
+    ...practice,
+    source: 'Excel',
+    historical: { contract: 1_200_000, cost: 800_000, margin: 400_000, commission: 96_000, secondMargin: 304_000 },
+    revenues: [
+      { date: '2026-10-18', amount: 400_000, number: '300-1', sourceRow: 1 },
+      { date: '2026-10-19', amount: 200_000, number: '300-8', sourceRow: 2 },
+      { date: '2025-10-18', amount: 100_000, number: '300-1', sourceRow: 3 },
+      { date: '2026-09-30', amount: 500_000, number: '', sourceRow: 4 },
+    ],
+  };
+  const excelDuplicate = invoice('300-1', '2026-10-18', 400_000, { source: 'Excel' });
+  assert.deepEqual(amounts([excelDuplicate, first], historical), [
+    ['2026-11-18', 400_000], ['2026-10-19', 200_000], ['2025-10-18', 100_000], ['2026-12-04', 500_000],
+  ]);
+  assert.deepEqual(['contract', 'margin', 'secondMargin'].map(mode => reportEntries([historical], mode)[0].amount),
+    [1_200_000, 400_000, 304_000]);
+});
