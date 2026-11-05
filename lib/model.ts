@@ -35,12 +35,14 @@ export function withUpdatedExcelContract(previous:Practice,updated:Practice):Pra
 }
 
 export function metrics(p:Practice){
+ const contract=weighted(p);
  if(p.historical){
-  return p.source==='Excel'&&p.recalculateExcelContract
-   ?{...p.historical,contract:weighted(p)}
+  // Earlier saves could update the Excel inputs without enabling recalculation.
+  const hasUpdatedContract=contract!=null&&contract!==p.historical.contract;
+  return p.source==='Excel'&&(p.recalculateExcelContract||hasUpdatedContract)
+   ?{...p.historical,contract}
    :p.historical;
  }
- const contract=weighted(p);
  const legacyNominalCost=p.amount!=null&&p.cost===Math.round(p.amount*.8);
  const cost=contract==null?null:(p.cost==null||legacyNominalCost?Math.round(contract*.8):p.cost);
  const margin=contract==null||cost==null?null:contract-cost;

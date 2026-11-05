@@ -93,3 +93,20 @@ test('an edited Excel probability changes the contract and residual while retain
   assert.deepEqual(withUpdatedExcelContract(leadora, leadoraEdit), leadoraEdit);
   assert.equal(metrics(leadoraEdit).contract, 1_920_000);
 });
+
+test('a previously saved Excel probability is used even without a recalculation flag', () => {
+  const excel = {
+    ...practice,
+    source: 'Excel',
+    amount: 7_000_000,
+    probability: 60,
+    historical: { contract: 7_000_000, cost: 5_600_000, margin: 1_400_000, commission: 560_000, secondMargin: 1_400_000 },
+  };
+  assert.equal(metrics(excel).contract, 4_200_000);
+  assert.equal(metrics(withUpdatedExcelContract(excel, { ...excel, probability: 59 })).contract, 4_130_000);
+  const returnedTo60 = withUpdatedExcelContract(excel, { ...excel, probability: 60 });
+  assert.equal(reportEntries([returnedTo60], 'contract')[0].amount, 4_200_000);
+  assert.deepEqual(amounts([], returnedTo60), [['2026-12-04', 4_200_000]]);
+  assert.equal(metrics(returnedTo60).margin, excel.historical.margin);
+  assert.equal(returnedTo60.historical.contract, 7_000_000);
+});
