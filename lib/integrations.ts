@@ -33,6 +33,8 @@ export function parseLeadora(raw:Record<string,any>,existing?:Practice){
  if(field(raw,'fornitore')!==undefined)p.partner=str(field(raw,'fornitore'));
  if(field(raw,'misura')!==undefined)p.measure=str(field(raw,'misura'));
  if(field(raw,'codice_cliente_ondapiu')!==undefined)p.customerCode=str(field(raw,'codice_cliente_ondapiu'));
+ const customerType=str(field(raw,'tipo_cliente'));
+ if(customerType)p.customerType=customerType;
  if(Object.hasOwn(raw,'status'))p.practiceStatus=practiceStatus(raw.status);
  if(Object.hasOwn(raw,'pipleline_stage'))p.state=str(raw.pipleline_stage);
  if(Object.hasOwn(raw,'lead_value'))p.amount=euro(raw.lead_value);
