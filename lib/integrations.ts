@@ -24,7 +24,24 @@ const field=(raw:Record<string,any>,name:string)=>{
 export function parseLeadora(raw:Record<string,any>,existing?:Practice){
  const location=str(raw.location?.id),contact=str(raw.contact_id);if(!location||!contact)throw new Error('Servono location.id e contact_id');
  const contactData={id:`leadora:${location}:contact:${contact}`,name:str(raw.full_name),email:str(raw.email),phone:str(raw.phone),company:str(raw.company_name),country:str(raw.country),createdAt:str(raw.date_created)};
- if(!raw.id||!Object.hasOwn(raw,'opportunity_name'))return {contact:contactData,practice:null};
+ const opportunityCustomerTypes=[
+  raw.customData?.['opportunity.tipo_cliente'],
+  raw.customData?.['{{opportunity.tipo_cliente}}'],
+  raw.customData?.opportunity?.tipo_cliente,
+  raw.customData?.fields?.['opportunity.tipo_cliente'],
+  raw.customData?.fields?.['{{opportunity.tipo_cliente}}'],
+  raw['opportunity.tipo_cliente'],
+  raw.opportunity?.tipo_cliente,
+ ];
+ const opportunityCustomerType=opportunityCustomerTypes.map(str).find(Boolean);
+ const customerType=opportunityCustomerTypes.some(value=>value!==undefined)
+  ?opportunityCustomerType
+  :str(field(raw,'tipo_cliente'));
+ if(!raw.id)return {contact:contactData,practice:null};
+ if(!Object.hasOwn(raw,'opportunity_name')){
+  const practice=existing&&opportunityCustomerType?{...existing,customerType:opportunityCustomerType}:null;
+  return {contact:contactData,practice};
+ }
  const id=`leadora:${location}:opportunity:${str(raw.id)}`;const p:Practice=existing?structuredClone(existing):blankPractice(id);
  p.id=id;p.source='Leadora';p.contactId=contact;
  if(Object.hasOwn(raw,'opportunity_name'))p.name=str(raw.opportunity_name);
@@ -33,7 +50,6 @@ export function parseLeadora(raw:Record<string,any>,existing?:Practice){
  if(field(raw,'fornitore')!==undefined)p.partner=str(field(raw,'fornitore'));
  if(field(raw,'misura')!==undefined)p.measure=str(field(raw,'misura'));
  if(field(raw,'codice_cliente_ondapiu')!==undefined)p.customerCode=str(field(raw,'codice_cliente_ondapiu'));
- const customerType=str(field(raw,'tipo_cliente'));
  if(customerType)p.customerType=customerType;
  if(Object.hasOwn(raw,'status'))p.practiceStatus=practiceStatus(raw.status);
  if(Object.hasOwn(raw,'pipleline_stage'))p.state=str(raw.pipleline_stage);
