@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { blankPractice, reportEntries, revenueReportEntries } from '../lib/model.ts';
+import { blankPractice, metrics, reportEntries, revenueReportEntries, withUpdatedExcelContract } from '../lib/model.ts';
 
 const practice = {
   ...blankPractice('practice-1'),
@@ -69,4 +69,27 @@ test('keeps historical documents, replaces Excel duplicates, and recalculates th
   ]);
   assert.deepEqual(['contract', 'margin', 'secondMargin'].map(mode => reportEntries([historical], mode)[0].amount),
     [1_200_000, 400_000, 304_000]);
+});
+
+test('an edited Excel probability changes the contract and residual while retaining historical values', () => {
+  const excel = {
+    ...practice,
+    source: 'Excel',
+    historical: { contract: 1_200_000, cost: 960_000, margin: 240_000, commission: 96_000, secondMargin: 144_000 },
+  };
+  assert.equal(withUpdatedExcelContract(excel, { ...excel, agent: 'Agente aggiornato' }).recalculateExcelContract, undefined);
+  const edited = withUpdatedExcelContract(excel, { ...excel, probability: 80 });
+  const reopened = JSON.parse(JSON.stringify(edited));
+  assert.equal(metrics(reopened).contract, 1_920_000);
+  assert.equal(reportEntries([reopened], 'contract')[0].amount, 1_920_000);
+  assert.deepEqual(amounts([first], reopened), [['2026-11-18', 400_000], ['2026-12-04', 1_520_000]]);
+  assert.deepEqual(reopened.historical, excel.historical);
+  assert.equal(metrics(reopened).margin, 240_000);
+  assert.equal(metrics(reopened).secondMargin, 144_000);
+  assert.equal(metrics(excel).contract, 1_200_000);
+
+  const leadora = { ...practice, source: 'Leadora' };
+  const leadoraEdit = { ...leadora, probability: 80 };
+  assert.deepEqual(withUpdatedExcelContract(leadora, leadoraEdit), leadoraEdit);
+  assert.equal(metrics(leadoraEdit).contract, 1_920_000);
 });

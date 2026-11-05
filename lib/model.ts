@@ -4,6 +4,7 @@ export type Practice = {
  power:number|null; storage:number|null; panel:string; battery:string; quantity:number|null;
  amount:number|null; probability:number|null; commission:number|null; closeDate:string; marginDate:string; cost:number|null; commissionRate:number|null; taxable:number|null; secondMarginPercent:number|null;
  historical:null|{contract:number; cost:number; margin:number; commission:number; secondMargin:number|null};
+ recalculateExcelContract?:boolean;
  revenues:{date:string;amount:number;number:string;sourceRow:number}[]; row:number|null; review:string[];
 };
 export type Invoice={id:string;number:string;date:string;dueDate:string;customerCode:string;customerName:string;contractCode:string;total:number;net:number;tax:number;balance:number|null;paid:boolean|null;practiceId:string|null;source:'Excel'|'Enerp'|'Manuale';review:string[]};
@@ -26,7 +27,26 @@ export function obsoletePractice(p:Practice,today=new Date()){const closeKey=val
 export const blankPractice=(id:string):Practice=>({id,name:'',agent:'',state:'IN TRATTATIVA',practiceStatus:'Aperta',measure:'',kind:'S',source:'Manuale',customerCode:'',contractCode:'',contactId:'',description:'',customerType:'',partner:'',list:'',power:null,storage:null,panel:'',battery:'',quantity:1,amount:null,probability:null,commission:null,closeDate:'',marginDate:'',cost:null,commissionRate:8,taxable:null,secondMarginPercent:null,historical:null,revenues:[],row:null,review:[]});
 export function weighted(p:Practice){return p.amount==null||p.probability==null?null:Math.round(p.amount*p.probability/100);}
 export function forecastDate(p:Practice){if(!p.closeDate)return '';const d=new Date(p.closeDate+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+35);return d.toISOString().slice(0,10);}
-export function metrics(p:Practice){if(p.historical)return p.historical;const contract=weighted(p);const legacyNominalCost=p.amount!=null&&p.cost===Math.round(p.amount*.8);const cost=contract==null?null:(p.cost==null||legacyNominalCost?Math.round(contract*.8):p.cost);const margin=contract==null||cost==null?null:contract-cost;const commission=p.commission??(contract==null||p.commissionRate==null?null:Math.round(contract*p.commissionRate/100));return {contract,cost,margin,commission,secondMargin:margin==null||commission==null?null:margin-commission};}
+export function withUpdatedExcelContract(previous:Practice,updated:Practice):Practice{
+ if(previous.source==='Excel'&&previous.historical&&previous.probability!==updated.probability){
+  return {...updated,recalculateExcelContract:true};
+ }
+ return updated;
+}
+
+export function metrics(p:Practice){
+ if(p.historical){
+  return p.source==='Excel'&&p.recalculateExcelContract
+   ?{...p.historical,contract:weighted(p)}
+   :p.historical;
+ }
+ const contract=weighted(p);
+ const legacyNominalCost=p.amount!=null&&p.cost===Math.round(p.amount*.8);
+ const cost=contract==null?null:(p.cost==null||legacyNominalCost?Math.round(contract*.8):p.cost);
+ const margin=contract==null||cost==null?null:contract-cost;
+ const commission=p.commission??(contract==null||p.commissionRate==null?null:Math.round(contract*p.commissionRate/100));
+ return {contract,cost,margin,commission,secondMargin:margin==null||commission==null?null:margin-commission};
+}
 export function calculatedSecondMarginPercent(p:Practice){const m=metrics(p);return p.taxable&&m.secondMargin!=null?Number((m.secondMargin/p.taxable*100).toFixed(4)):null;}
 export function missing(p:Practice){return [!p.agent&&'Agente',!p.measure&&'Misura',p.probability==null&&'Probabilità',!p.description&&'Descrizione',!p.contractCode&&'Riferimento Enerp',...p.review].filter(Boolean) as string[];}
 const reportEntryBase=(p:Practice)=>({practiceId:p.id,measure:p.measure||'Da classificare',kind:p.kind});
