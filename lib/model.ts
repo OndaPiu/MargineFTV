@@ -5,6 +5,7 @@ export type Practice = {
  amount:number|null; probability:number|null; commission:number|null; closeDate:string; marginDate:string; cost:number|null; commissionRate:number|null; taxable:number|null; secondMarginPercent:number|null;
  historical:null|{contract:number; cost:number; margin:number; commission:number; secondMargin:number|null};
  recalculateExcelContract?:boolean;
+ costMode?:'automatic'|'manual';
  revenues:{date:string;amount:number;number:string;sourceRow:number}[]; row:number|null; review:string[];
 };
 export type Invoice={id:string;number:string;date:string;dueDate:string;customerCode:string;customerName:string;contractCode:string;total:number;net:number;tax:number;balance:number|null;paid:boolean|null;practiceId:string|null;source:'Excel'|'Enerp'|'Manuale';review:string[]};
@@ -34,6 +35,25 @@ export function withUpdatedExcelContract(previous:Practice,updated:Practice):Pra
  return updated;
 }
 
+export function usesAutomaticCost(p:Practice):boolean{
+ if(p.historical)return false;
+ if(p.costMode)return p.costMode==='automatic';
+ const contract=weighted(p);
+ return p.cost==null
+  ||(contract!=null&&p.cost===Math.round(contract*.8))
+  ||(p.amount!=null&&p.cost===Math.round(p.amount*.8));
+}
+
+export function withUpdatedCost(previous:Practice,updated:Practice):Practice{
+ if(updated.historical)return updated;
+ const automatic=updated.costMode
+  ?updated.costMode==='automatic'
+  :updated.cost==null||(previous.cost===updated.cost&&usesAutomaticCost(previous));
+ const contract=weighted(updated);
+ const estimatedCost=contract==null?null:Math.round(contract*.8);
+ return {...updated,costMode:automatic?'automatic':'manual',cost:automatic?estimatedCost:updated.cost};
+}
+
 export function metrics(p:Practice){
  const contract=weighted(p);
  if(p.historical){
@@ -43,8 +63,7 @@ export function metrics(p:Practice){
    ?{...p.historical,contract}
    :p.historical;
  }
- const legacyNominalCost=p.amount!=null&&p.cost===Math.round(p.amount*.8);
- const cost=contract==null?null:(p.cost==null||legacyNominalCost?Math.round(contract*.8):p.cost);
+ const cost=contract==null?null:(usesAutomaticCost(p)?Math.round(contract*.8):p.cost);
  const margin=contract==null||cost==null?null:contract-cost;
  const commission=p.commission??(contract==null||p.commissionRate==null?null:Math.round(contract*p.commissionRate/100));
  return {contract,cost,margin,commission,secondMargin:margin==null||commission==null?null:margin-commission};

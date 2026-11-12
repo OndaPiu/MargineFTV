@@ -61,3 +61,11 @@
 .practice-sort-button span {
   min-width: 0.8em;
 }
+.cost-mode {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.cost-mode input {
+  width: auto;
+}
