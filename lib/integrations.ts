@@ -1,4 +1,4 @@
-import {applyPracticeStatusRules,blankPractice,calculatedSecondMarginPercent,euro,isoDate,practiceStatus,withUpdatedCost,type Practice,type Invoice} from './model';
+import {applyPracticeStatusRules,blankPractice,calculatedSecondMarginPercent,euro,isoDate,practiceStatus,withUpdatedCost,withAcceptanceDate,type Practice,type Invoice} from './model';
 const addMonths=(base:Date,n:number)=>{const d=new Date(Date.UTC(base.getUTCFullYear(),base.getUTCMonth()+n,1));return d.toISOString().slice(0,10)};
 const str=(v:unknown)=>typeof v==='string'?v.trim():'';
 const assignee=(v:unknown):string=>{
@@ -38,7 +38,7 @@ export function parseLeadora(raw:Record<string,any>,existing?:Practice){
   ?opportunityCustomerType
   :str(field(raw,'tipo_cliente'));
  if(!raw.id)return {contact:contactData,practice:null};
- if(!Object.hasOwn(raw,'opportunity_name')){
+ if(!Object.hasOwn(raw,'opportunity_name')&&!(existing&&Object.hasOwn(raw,'pipleline_stage'))){
   const practice=existing&&opportunityCustomerType?{...existing,customerType:opportunityCustomerType}:null;
   return {contact:contactData,practice};
  }
@@ -53,6 +53,7 @@ export function parseLeadora(raw:Record<string,any>,existing?:Practice){
  if(customerType)p.customerType=customerType;
  if(Object.hasOwn(raw,'status'))p.practiceStatus=practiceStatus(raw.status);
  if(Object.hasOwn(raw,'pipleline_stage'))p.state=str(raw.pipleline_stage);
+ Object.assign(p,withAcceptanceDate(existing,p));
  if(Object.hasOwn(raw,'lead_value'))p.amount=euro(raw.lead_value);
  const rawProbability=field(raw,'_di_chiusura');
  if(rawProbability!==undefined){const parsed=Number(String(rawProbability).replace('%','').replace(',','.').trim());if(Number.isFinite(parsed))p.probability=parsed;}
