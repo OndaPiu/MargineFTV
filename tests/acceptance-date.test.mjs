@@ -8,6 +8,12 @@ test('records the first accepted transition with a Rome date and observed timest
  assert.equal(p.acceptedAt,now.toISOString());
  assert.equal(p.acceptedDateSource,'automatic');
 });
+test('recognizes a decorated accepted label without inventing a new transition on decoration changes',()=>{
+ const p=withAcceptanceDate({state:'📤 Preventivo Inviato'},{state:'✍️ Preventivo Accettato'},undefined,now);
+ assert.equal(p.acceptedDate,'2026-11-17');
+ const legacy=withAcceptanceDate({state:'Preventivo Accettato'},{state:'✍️ Preventivo Accettato'},undefined,now);
+ assert.equal(legacy.acceptedDate,undefined);
+});
 test('no historical acceptance date is invented for an initial accepted import or legacy accepted practice',()=>{
  assert.equal(withAcceptanceDate(undefined,{state:'Preventivo Accettato'},undefined,now).acceptedDate,undefined);
  assert.equal(withAcceptanceDate({state:'Preventivo Accettato'},{state:'Preventivo Accettato'},undefined,now).acceptedDate,undefined);

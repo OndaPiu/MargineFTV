@@ -1,3 +1,4 @@
+import {isAcceptedStage} from './commercial-stage.mjs';
 export type Practice = {
  id:string; name:string; agent:string; state:string; practiceStatus:string; measure:string; kind:'R'|'S'; source:'Excel'|'Leadora'|'Manuale';
  acceptedDate?:string; acceptedAt?:string; acceptedDateSource?:'automatic'|'manual';
@@ -11,7 +12,7 @@ export type Practice = {
 };
 export type Invoice={id:string;number:string;date:string;dueDate:string;customerCode:string;customerName:string;contractCode:string;total:number;net:number;tax:number;balance:number|null;paid:boolean|null;practiceId:string|null;source:'Excel'|'Enerp'|'Manuale';review:string[]};
 export type Entity={id:string;kind:'practice'|'invoice'|'contact';data:Practice|Invoice|Record<string,unknown>;version:number};
-export type Snapshot={entities:Entity[];events:{id:string;source:string;summary:string;createdAt:string}[];seedAvailable:boolean};
+export type Snapshot={entities:Entity[];events:{id:string;source:string;summary:string;createdAt:string}[];seedAvailable:boolean;readOnly?:boolean};
 export const money=(cents:number|null|undefined)=>{if(cents==null)return '—';const value=(cents/100).toFixed(2);const [whole,dec]=value.split('.');const grouped=whole.replace(/\B(?=(\d{3})+(?!\d))/g,'.');return `${grouped},${dec} €`;};
 export const euro=(value:unknown):number|null=>{
  if(value==null||value==='')return null;
@@ -25,7 +26,7 @@ export function romeDate(now=new Date()):string{
  return new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Rome',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
 }
 export function acceptedStage(value:string):boolean{
- return value.trim().toLocaleLowerCase('it').replace(/\s+/g,' ')==='preventivo accettato';
+ return isAcceptedStage(value);
 }
 type AcceptanceFields={state:string;acceptedDate?:string;acceptedAt?:string;acceptedDateSource?:'automatic'|'manual'};
 export function withAcceptanceDate<T extends AcceptanceFields>(previous:AcceptanceFields|undefined,updated:T,explicitDate?:string,now=new Date()):T{

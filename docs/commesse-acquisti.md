@@ -168,3 +168,21 @@ registrata nuovamente alla conclusione.
 
 I nuovi campi sono opzionali nei documenti JSON esistenti: non serve
 una migrazione SQL aggiuntiva per queste date.
+
+## Anteprima collegata alle pratiche reali
+
+In sviluppo, mantenendo PROCUREMENT_LOCAL_PREVIEW=1, si può impostare
+PROCUREMENT_READ_ONLY_SOURCE_URL all’endpoint HTTPS /api/workspace del
+gestionale esistente. L’anteprima rilegge pratiche e fatture al caricamento
+e tramite Aggiorna dati, senza registrare copie nel repository.
+Il catalogo resta quello privato locale. La stessa sessione firmata protegge
+la lettura dei dati reali anche dall’area commerciale locale.
+
+Il pannello Commesse mostra le pratiche reali e consente di simulare il flusso
+per quelle idonee. Nessuna commessa simulata viene salvata. Le API rifiutano
+le modifiche sia nell’area commerciale sia nell’area operativa durante questa
+modalità. Il collegamento di sola lettura è disattivato in produzione.
+
+I nomi delle fasi mantengono il testo originale mostrato all’utente; il
+riconoscimento di Preventivo Accettato ignora icone decorative iniziali,
+come nella fase Leadora “✍️ Preventivo Accettato”.

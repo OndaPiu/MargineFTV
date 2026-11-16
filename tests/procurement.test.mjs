@@ -7,6 +7,9 @@ test('requires both commercial conditions, ignoring case and whitespace',()=>{
  assert.equal(eligiblePractice({practiceStatus:'Vinta',state:' PREVENTIVO   ACCETTATO '}),true);
  assert.equal(eligiblePractice({practiceStatus:'Aperta',state:'Preventivo Accettato'}),false);
  assert.equal(eligiblePractice({practiceStatus:'Vinta',state:'In trattativa'}),false);
+ assert.equal(eligiblePractice({practiceStatus:'Vinta',state:'✍️ Preventivo Accettato'}),true);
+ assert.equal(eligiblePractice({practiceStatus:'Aperta',state:'✍️ Preventivo Accettato'}),false);
+ assert.equal(eligiblePractice({practiceStatus:'Vinta',state:'✍️ Preventivo Accettato da verificare'}),false);
 });
 test('uses the requested payment sequences and flexible second installment',()=>{
  assert.deepEqual(paymentPlan(1).map(i=>i.kind),['Saldo']);
