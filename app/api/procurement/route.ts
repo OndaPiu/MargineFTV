@@ -52,7 +52,7 @@ export async function POST(req:Request){
    const practice=practices.find(p=>p.id===job.practiceId);
    const existing=jobs.find(j=>j.id===job.id);
    if(existing&&existing.practiceId!==job.practiceId)throw new Error('La pratica della commessa non può cambiare.');
-   if(!practice||(!existing&&!eligiblePractice(practice)))throw new Error('Sono richiesti stato Vinta e fase Preventivo Accettato.');
+   if(!practice||(!existing&&!eligiblePractice(practice)))throw new Error('È richiesto lo stato pratica Vinta.');
    if(!existing&&jobs.some(j=>j.practiceId===job.practiceId))throw new Error('Commessa già avviata per questa pratica.');
    if(existing&&existing.installments.length!==job.installments.length)throw new Error('Il piano rate già avviato richiede una revisione dedicata.');
    const dated=withCompletionDate(existing,job,romeDate());

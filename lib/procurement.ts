@@ -1,4 +1,4 @@
-import {isAcceptedStage,normalizeCommercialLabel} from './commercial-stage.mjs';
+import {normalizeCommercialLabel} from './commercial-stage.mjs';
 export type Offer = {
  id:string; supplierId:string|null; supplierName:string; brand:string|null; code:string;
  label:string; description:string; category:string; section:string;
@@ -28,8 +28,8 @@ export type Job={
  orders:{id:string;supplierId:string;reference:string;status:'Da ordinare'|'Ordinato'|'Consegnato'}[];
  notes:string;
 };
-export function eligiblePractice(p:Pick<OperationalPractice,'practiceStatus'|'state'>){
- return ['vinta','won'].includes(normalizeCommercialLabel(p.practiceStatus))&&isAcceptedStage(p.state);
+export function eligiblePractice(p:Pick<OperationalPractice,'practiceStatus'>){
+ return ['vinta','won'].includes(normalizeCommercialLabel(p.practiceStatus));
 }
 export function paymentPlan(count:1|2|3):Installment[]{
  const kinds:Installment['kind'][]=count===1?['Saldo']:count===2?['Acconto','Saldo']:['Deposito cauzionale','Acconto','Saldo'];

@@ -3,13 +3,16 @@ import assert from 'node:assert/strict';
 import {eligiblePractice,paymentPlan,validateJob,firstPaymentReceived,offerWarnings,withCompletionDate} from '../lib/procurement.ts';
 import {authorized,correctPassword,sessionCookie,sameOrigin} from '../lib/procurement-auth.ts';
 const job=()=>({id:'job-p1',practiceId:'p1',version:0,installments:paymentPlan(2),connection:'Da aprire',works:'Da avviare',orders:[],notes:''});
-test('requires both commercial conditions, ignoring case and whitespace',()=>{
- assert.equal(eligiblePractice({practiceStatus:'Vinta',state:' PREVENTIVO   ACCETTATO '}),true);
- assert.equal(eligiblePractice({practiceStatus:'Aperta',state:'Preventivo Accettato'}),false);
- assert.equal(eligiblePractice({practiceStatus:'Vinta',state:'In trattativa'}),false);
- assert.equal(eligiblePractice({practiceStatus:'Vinta',state:'✍️ Preventivo Accettato'}),true);
- assert.equal(eligiblePractice({practiceStatus:'Aperta',state:'✍️ Preventivo Accettato'}),false);
- assert.equal(eligiblePractice({practiceStatus:'Vinta',state:'✍️ Preventivo Accettato da verificare'}),false);
+test('all won practices are eligible regardless of commercial stage',()=>{
+ assert.equal(eligiblePractice({practiceStatus:'Vinta',state:'Preventivo Accettato'}),true);
+ assert.equal(eligiblePractice({practiceStatus:'Vinta',state:'In trattativa'}),true);
+ assert.equal(eligiblePractice({practiceStatus:'Vinta',state:'Preventivo Inviato'}),true);
+ assert.equal(eligiblePractice({practiceStatus:'Vinta',state:''}),true);
+ assert.equal(eligiblePractice({practiceStatus:' VINTA '}),true);
+ assert.equal(eligiblePractice({practiceStatus:'won',state:'Da completare'}),true);
+ for(const practiceStatus of ['Aperta','Persa','Abbandonata','',undefined]){
+  assert.equal(eligiblePractice({practiceStatus,state:'✍️ Preventivo Accettato'}),false);
+ }
 });
 test('uses the requested payment sequences and flexible second installment',()=>{
  assert.deepEqual(paymentPlan(1).map(i=>i.kind),['Saldo']);

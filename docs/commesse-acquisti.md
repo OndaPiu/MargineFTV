@@ -15,7 +15,7 @@ Sono disponibili:
 - Registro fornitori con marchi documentati. Il marchio non viene usato come distributore.
 - Scheda del materiale e anomalie da verificare; consultazione dei PDF in anteprima locale.
 - Distinta temporanea con quantità, costo dei materiali e differenza rispetto al costo previsto.
-- Coda di avvio commesse da pratiche Vinte con fase Preventivo Accettato.
+- Coda di avvio commesse da tutte le pratiche Vinte, indipendentemente dalla fase commerciale.
 - Piani da 1/2/3 rate, importi e scadenze liberi, collegamento a fatture della stessa pratica.
 - Pagamento derivato dai documenti importati, oppure registrazione di riferimento e data per documenti esterni.
 - Tracciamento ordini per fornitore, lavori e pratica di connessione Emmolo.
@@ -56,7 +56,7 @@ si arrotonda dopo la moltiplicazione per la quantità.
 
 ## Regole della commessa
 
-1. Avvio solo con stato pratica Vinta e fase Preventivo Accettato; una commessa per pratica.
+1. Avvio con stato pratica Vinta, indipendentemente dalla fase commerciale; una commessa per pratica.
 2. Una rata: saldo all’accettazione.
 3. Due rate: acconto all’accettazione, saldo durante i lavori o verso la fine.
 4. Tre rate: deposito cauzionale all’accettazione, acconto a inizio lavori, saldo a fine lavori.
@@ -134,7 +134,7 @@ node node_modules/next/dist/bin/next build --webpack
 ```
 
 I test PDF usano un documento sintetico, senza listini o prezzi riservati.
-I test coprono sequenze rate, doppia condizione di avvio, pagamento iniziale,
+I test coprono sequenze rate, avvio delle pratiche vinte in qualsiasi fase commerciale, pagamento iniziale,
 associazione fatture, sessioni firmate, origine delle richieste, sconti,
 prezzi netti, pagine miste, anomalie, incentivi separati e frazioni di centesimo.
 La scheda di collaudo dell’anteprima è salvata in output/procurement-qa.json.
@@ -147,7 +147,7 @@ La data del primo preventivo accettato è memorizzata nella pratica
 Il passaggio viene intercettato sia nel salvataggio manuale sia nel parser
 Leadora utilizzato dal webhook e dall’importazione manuale.
 Lo stato pratica Vinta non è richiesto per registrare la data commerciale;
-resta richiesto insieme a Preventivo Accettato per avviare la commessa.
+è invece l’unico requisito di stato per avviare la commessa, senza filtro sulla fase commerciale.
 
 Un primo import già in fase accettata e le pratiche storiche già accettate
 non ricevono una data inventata. Il giorno storico è compilabile o correggibile
