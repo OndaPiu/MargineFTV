@@ -1,5 +1,7 @@
+import {isAcceptedStage} from './commercial-stage.mjs';
 export type Practice = {
  id:string; name:string; agent:string; state:string; practiceStatus:string; measure:string; kind:'R'|'S'; source:'Excel'|'Leadora'|'Manuale';
+ acceptedDate?:string; acceptedAt?:string; acceptedDateSource?:'automatic'|'manual';
  customerCode:string; contractCode:string; contactId:string; description:string; customerType:string; partner:string; list:string;
  power:number|null; storage:number|null; panel:string; battery:string; quantity:number|null;
  amount:number|null; probability:number|null; commission:number|null; closeDate:string; marginDate:string; cost:number|null; commissionRate:number|null; taxable:number|null; secondMarginPercent:number|null;
@@ -10,7 +12,7 @@ export type Practice = {
 };
 export type Invoice={id:string;number:string;date:string;dueDate:string;customerCode:string;customerName:string;contractCode:string;total:number;net:number;tax:number;balance:number|null;paid:boolean|null;practiceId:string|null;source:'Excel'|'Enerp'|'Manuale';review:string[]};
 export type Entity={id:string;kind:'practice'|'invoice'|'contact';data:Practice|Invoice|Record<string,unknown>;version:number};
-export type Snapshot={entities:Entity[];events:{id:string;source:string;summary:string;createdAt:string}[];seedAvailable:boolean};
+export type Snapshot={entities:Entity[];events:{id:string;source:string;summary:string;createdAt:string}[];seedAvailable:boolean;readOnly?:boolean};
 export const money=(cents:number|null|undefined)=>{if(cents==null)return '—';const value=(cents/100).toFixed(2);const [whole,dec]=value.split('.');const grouped=whole.replace(/\B(?=(\d{3})+(?!\d))/g,'.');return `${grouped},${dec} €`;};
 export const euro=(value:unknown):number|null=>{
  if(value==null||value==='')return null;
@@ -20,6 +22,24 @@ export const euro=(value:unknown):number|null=>{
  const cents=Number(whole)*100+Number(dec.padEnd(2,'0'));if(!Number.isSafeInteger(cents))throw new Error('Importo troppo grande');return neg?-cents:cents;
 };
 export function isoDate(value:unknown):string{if(value==null||value==='')return '';let s=String(value);if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)){const [d,m,y]=s.split('/');s=`${y}-${m}-${d}`;}if(!/^\d{4}-\d{2}-\d{2}$/.test(s)||new Date(s+'T00:00:00Z').toISOString().slice(0,10)!==s)throw new Error('Data non valida');return s;}
+export function romeDate(now=new Date()):string{
+ return new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Rome',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
+}
+export function acceptedStage(value:string):boolean{
+ return isAcceptedStage(value);
+}
+type AcceptanceFields={state:string;acceptedDate?:string;acceptedAt?:string;acceptedDateSource?:'automatic'|'manual'};
+export function withAcceptanceDate<T extends AcceptanceFields>(previous:AcceptanceFields|undefined,updated:T,explicitDate?:string,now=new Date()):T{
+ if(explicitDate!==undefined&&explicitDate!==(previous?.acceptedDate||'')){
+  return {...updated,acceptedDate:isoDate(explicitDate),acceptedDateSource:explicitDate?'manual':undefined,acceptedAt:previous?.acceptedAt};
+ }
+ if(previous?.acceptedDate)return {...updated,acceptedDate:previous.acceptedDate,acceptedDateSource:previous.acceptedDateSource,acceptedAt:previous.acceptedAt};
+ // A first import already accepted is not evidence of the historical transition date.
+ if(previous&&!acceptedStage(previous.state)&&acceptedStage(updated.state)){
+  return {...updated,acceptedDate:romeDate(now),acceptedAt:now.toISOString(),acceptedDateSource:'automatic'};
+ }
+ return updated;
+}
 export function practiceStatus(value:unknown):string{const raw=String(value??'').trim();const key=raw.toLowerCase();return (({open:'Aperta',won:'Vinta',lost:'Persa',abandoned:'Abbandonata',aperta:'Aperta',vinta:'Vinta',persa:'Persa',abbandonata:'Abbandonata'} as Record<string,string>)[key]??raw)||'Aperta';}
 export function inactivePracticeStatus(value:unknown):boolean{return ['Persa','Abbandonata'].includes(practiceStatus(value));}
 export function applyPracticeStatusRules<T extends {practiceStatus?:string|null;probability:number|null;kind:'R'|'S'}>(p:T):T{const normalized=practiceStatus(p.practiceStatus);return {...p,practiceStatus:normalized,probability:inactivePracticeStatus(normalized)?0:p.probability,kind:inactivePracticeStatus(normalized)?'S':p.kind} as T;}
