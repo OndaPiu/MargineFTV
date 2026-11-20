@@ -5,6 +5,7 @@ import {allJobs,catalog,localPreview,saveJob} from '../../../lib/procurement-sto
 import {eligiblePractice,validateJob,withCompletionDate,type OperationalInvoice,type OperationalPractice,type Job} from '../../../lib/procurement';
 import {romeDate} from '../../../lib/model';
 import {realPreviewEnabled,realPreviewData} from '../../../lib/procurement-preview';
+import {procurementReadOnly,hostedReadOnly} from '../../../lib/procurement-mode.mjs';
 export const dynamic='force-dynamic';
 const headers={'Cache-Control':'no-store, private','Vary':'Cookie'};
 const json=(data:unknown,status=200,extra:Record<string,string>={})=>Response.json(data,{status,headers:{...headers,...extra}});
@@ -28,7 +29,7 @@ export async function GET(req:Request){
  if(!authorized(req))return json({authenticated:false,configured:authConfigured()},401);
  try{
   const [data,jobs,commercial]=await Promise.all([catalog(),allJobs(),commercialData()]);
-  return json({authenticated:true,localPreview:localPreview(),liveData:realPreviewEnabled(),catalog:data,jobs,...commercial});
+  return json({authenticated:true,localPreview:localPreview(),readOnly:procurementReadOnly(),liveData:realPreviewEnabled()||hostedReadOnly(),catalog:data,jobs,...commercial});
  }catch{return json({error:'Dati non disponibili. Configura archivio, migrazione e catalogo.'},503);}
 }
 export async function POST(req:Request){
@@ -45,7 +46,7 @@ export async function POST(req:Request){
   if(!authorized(req))return json({error:'Accesso richiesto.'},401);
   if(body.action==='logout')return json({ok:true},200,{'Set-Cookie':clearSessionCookie()});
   if(body.action==='save-job'){
-   if(localPreview())return json({error:'Anteprima in sola lettura: i dati reali non vengono modificati.'},403);
+   if(procurementReadOnly())return json({error:'Sezione in lavorazione: le prove non vengono salvate.'},403);
    const job=schema.parse(body.job) as Job;
    const [{practices,invoices},jobs]=await Promise.all([commercialData(),allJobs()]);
    const practice=practices.find(p=>p.id===job.practiceId);

@@ -186,3 +186,33 @@ modalità. Il collegamento di sola lettura è disattivato in produzione.
 I nomi delle fasi mantengono il testo originale mostrato all’utente; il
 riconoscimento di Preventivo Accettato ignora icone decorative iniziali,
 come nella fase Leadora “✍️ Preventivo Accettato”.
+
+## Pubblicazione iniziale della sezione in lavorazione
+
+La variabile server PROCUREMENT_MODE=read-only rende la sola area operativa
+consultabile e simulabile anche in produzione. I salvataggi commesse vengono
+rifiutati dal server; non si interrogano le nuove tabelle commesse.
+L’area commerciale esistente continua a usare normalmente il proprio archivio.
+Le pratiche e fatture sono lette dall’archivio Supabase già configurato.
+
+Per questa prima pubblicazione il catalogo può essere fornito con
+PROCUREMENT_CATALOG_GZIP_BASE64: JSON del catalogo privato, senza audit
+di estrazione, compresso con gzip e codificato in base64. Il valore è una
+configurazione riservata del server e non deve essere incluso nel repository
+o in variabili NEXT_PUBLIC_. Viene decodificato solo dal server, con un limite
+di dimensione, e restituito solo dopo l’accesso all’area riservata.
+Non sostituisce il futuro caricamento listini dall’interfaccia.
+
+La password PROCUREMENT_ACCESS_PASSWORD deve essere configurata nel medesimo
+ambiente Vercel del rilascio. La modalità locale e la sua fonte HTTPS non
+vanno abilitate in produzione. I documenti PDF restano consultabili localmente
+finché non sarà predisposto l’archivio file riservato online.
+
+Collaudo della modalità ospitata dopo la compilazione:
+
+```sh
+node tests/hosted-procurement.http.mjs
+```
+
+Il collaudo avvia server locali isolati con dati sintetici e verifica accesso,
+lettura delle pratiche, blocco salvataggi e indipendenza dell’area commerciale.
