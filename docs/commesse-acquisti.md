@@ -89,6 +89,10 @@ e non finge salvataggi di commesse. Per gli archivi operativi serve Supabase.
 
 ## Collegamento all’archivio esistente
 
+Per aggiornare o archiviare le singole voci dal sito, vedere
+[Modifica del catalogo](catalog-editing.md): migrazione e abilitazione dei
+salvataggi sono separate da quelle delle commesse.
+
 Passaggi da eseguire nell’ambiente del proprietario, dopo la revisione:
 
 1. Applicare supabase/schema.sql solo se le tabelle originali non esistono già,

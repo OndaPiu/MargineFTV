@@ -1,7 +1,8 @@
 import {z} from 'zod';
 import {authorized,authConfigured,correctPassword,sessionCookie,clearSessionCookie,sameOrigin,allowLogin} from '../../../lib/procurement-auth';
 import {allRecords} from '../../../lib/store';
-import {allJobs,catalog,localPreview,saveJob} from '../../../lib/procurement-store';
+import {allJobs,catalog,localPreview,saveJob,updateCatalogOffer,CatalogUpdateError} from '../../../lib/procurement-store';
+import {offerMutation,catalogEditingEnabled} from '../../../lib/procurement-catalog-edit';
 import {eligiblePractice,validateJob,withCompletionDate,type OperationalInvoice,type OperationalPractice,type Job} from '../../../lib/procurement';
 import {romeDate} from '../../../lib/model';
 import {realPreviewEnabled,realPreviewData} from '../../../lib/procurement-preview';
@@ -29,7 +30,7 @@ export async function GET(req:Request){
  if(!authorized(req))return json({authenticated:false,configured:authConfigured()},401);
  try{
   const [data,jobs,commercial]=await Promise.all([catalog(),allJobs(),commercialData()]);
-  return json({authenticated:true,localPreview:localPreview(),readOnly:procurementReadOnly(),liveData:realPreviewEnabled()||hostedReadOnly(),catalog:data,jobs,...commercial});
+  return json({authenticated:true,localPreview:localPreview(),readOnly:procurementReadOnly(),catalogEditable:catalogEditingEnabled(),liveData:realPreviewEnabled()||hostedReadOnly(),catalog:data,jobs,...commercial});
  }catch{return json({error:'Dati non disponibili. Configura archivio, migrazione e catalogo.'},503);}
 }
 export async function POST(req:Request){
@@ -45,6 +46,11 @@ export async function POST(req:Request){
   }
   if(!authorized(req))return json({error:'Accesso richiesto.'},401);
   if(body.action==='logout')return json({ok:true},200,{'Set-Cookie':clearSessionCookie()});
+  if(body.action==='update-offer'){
+   if(!catalogEditingEnabled())return json({error:'I salvataggi del catalogo non sono ancora abilitati.'},403);
+   const input=offerMutation.parse(body.mutation);
+   return json({offer:await updateCatalogOffer(input.id,input.expected,input.changes)});
+  }
   if(body.action==='save-job'){
    if(procurementReadOnly())return json({error:'Sezione in lavorazione: le prove non vengono salvate.'},403);
    const job=schema.parse(body.job) as Job;
@@ -61,5 +67,5 @@ export async function POST(req:Request){
    return json({job:await saveJob(dated)});
   }
   return json({error:'Azione non disponibile.'},400);
- }catch(e){return json({error:e instanceof z.ZodError?'Controlla i campi della commessa.':e instanceof SyntaxError?'Richiesta non valida.':e instanceof Error?e.message:'Operazione non riuscita.'},400);}
+ }catch(e){return json({error:e instanceof z.ZodError?'Controlla i campi inseriti: '+e.issues[0]?.message:e instanceof SyntaxError?'Richiesta non valida.':e instanceof Error?e.message:'Operazione non riuscita.'},e instanceof CatalogUpdateError?e.status:400);}
 }
