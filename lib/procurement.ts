@@ -27,10 +27,17 @@ export type Job={
  works:'Da avviare'|'In corso'|'Conclusi';
  completedDate?:string;
  materials?:JobMaterial[];
+ extras?:JobExtra[];
  orders:{id:string;supplierId:string;reference:string;status:'Da ordinare'|'Ordinato'|'Consegnato'}[];
  notes:string;
 };
 export type JobMaterial={id:string;offerId:string;quantity:number;snapshot:MaterialSnapshot};
+export type JobExtra={id:string;documentId:string;description:string;amountCents:number|null;vatIncluded:boolean|null;documentName?:string;supplierId?:string|null;supplierName?:string};
+export function jobCosts(job:Job){
+ const materials=(job.materials||[]).reduce((sum,m)=>sum+(materialLineTotal(m)??0),0);
+ const extras=(job.extras||[]).reduce((sum,e)=>sum+(e.amountCents??0),0);
+ return {materials,extras,total:materials+extras,incomplete:(job.materials||[]).some(m=>m.snapshot.unitPriceCents===null)||(job.extras||[]).some(e=>e.amountCents===null)};
+}
 export type MaterialSnapshot={
  label:string;code:string;brand:string|null;description:string;supplierId:string|null;supplierName:string;
  unit:string;unitPriceCents:number|null;currency:string;vatIncluded:boolean|null;documentId:string;documentName:string;page?:number;
@@ -54,6 +61,8 @@ export function validateMaterialChanges(previous:Job|undefined,next:Job){
  if(previous?.orders.some(o=>o.status!=='Da ordinare')){
   const select=(job:Job)=>(job.materials||[]).map(m=>({id:m.id,offerId:m.offerId,quantity:m.quantity})).sort((a,b)=>a.id.localeCompare(b.id));
   if(JSON.stringify(select(previous))!==JSON.stringify(select(next)))throw new Error('I materiali di una commessa già ordinata richiedono una revisione dell’ordine.');
+  const extra=(job:Job)=>(job.extras||[]).map(({id,documentId,description,amountCents,vatIncluded})=>({id,documentId,description,amountCents,vatIncluded})).sort((a,b)=>a.id.localeCompare(b.id));
+  if(JSON.stringify(extra(previous))!==JSON.stringify(extra(next)))throw new Error('Gli extra di una commessa già ordinata richiedono una revisione dell’ordine.');
  }
 }
 export function eligiblePractice(p:Pick<OperationalPractice,'practiceStatus'>){

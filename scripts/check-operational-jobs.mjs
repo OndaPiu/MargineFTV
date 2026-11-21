@@ -1,7 +1,7 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';import {createRequire} from 'node:module';
 const {PGlite}=createRequire(import.meta.url)(process.env.PROCUREMENT_PGLITE_MODULE||'@electric-sql/pglite');const db=await PGlite.create();
 await db.exec("create role anon;create role authenticated;create role service_role bypassrls;create table records(id text primary key,kind text,data jsonb);insert into records values('p1','practice','{\"practiceStatus\":\"Vinta\"}'),('p2','practice','{\"practiceStatus\":\"Vinta\"}'),('open','practice','{\"practiceStatus\":\"Aperta\"}'),('i1','invoice','{\"practiceId\":\"p1\",\"paid\":true}'),('i2','invoice','{\"practiceId\":\"p2\",\"paid\":true}');");
-for(const name of ['procurement.sql','procurement-catalog-edit.sql','procurement-operational-jobs.sql','procurement-operational-jobs.sql'])await db.exec(await readFile(new URL('../supabase/'+name,import.meta.url),'utf8'));
+for(const name of ['procurement.sql','procurement-catalog-edit.sql','procurement-operational-jobs.sql','procurement-job-extras.sql','procurement-job-extras.sql'])await db.exec(await readFile(new URL('../supabase/'+name,import.meta.url),'utf8'));
 const fixture={schemaVersion:1,suppliers:[{id:'s1',name:'Fornitore QA',brands:['Marca QA']}],documents:[{id:'d1',name:'Listino QA',supplierId:'s1',date:'2026-11',pages:1}],offers:[{id:'o1',label:'Cavo QA',code:'QA-1',brand:'Marca QA',description:'Dati sintetici',category:'Cavi',section:'Cavi',supplierId:'s1',supplierName:'Fornitore QA',documentId:'d1',documentDate:'2026-11',page:1,unit:'metro',currency:'EUR',listPriceCents:121,purchasePriceCents:60.5,shippingCents:null,priceBasis:'gross',discountPercent:50,vatIncluded:false,validUntil:null,validityStatus:'to-confirm',stockStatus:'unknown',review:[],verified:false}]};
 await db.query('select import_procurement_catalog($1::jsonb)',[JSON.stringify(fixture)]);
 const draft=(id='j1',practiceId='p1')=>({id,practiceId,version:0,installments:[{id:'r1',kind:'Saldo',milestone:'Accettazione',amountCents:null,dueDate:'',invoiceId:null,manualReference:'',manualPaidDate:''}],connection:'Da aprire',works:'Da avviare',completedDate:'',materials:[{id:'m1',offerId:'o1',quantity:100,snapshot:{unitPriceCents:1}}],orders:[],notes:''});
@@ -36,6 +36,15 @@ test('orders, connection and works require a real first payment from the same pr
  const paid={...job,installments:[{...job.installments[0],invoiceId:'i1'}],connection:'Aperta',orders:[{id:'ord1',supplierId:'s1',reference:'QA',status:'Ordinato'}]};
  job=await save(paid);assert.equal(job.version,3);assert.equal(job.connection,'Aperta');
  await assert.rejects(()=>save({...job,materials:[]}),/già ordinati/);
+});
+test('extras preserve list provenance, allow multiple costs and reject invalid entries atomically',async()=>{
+ const base={...draft('extra-job','p2'),materials:[],extras:[{id:'e1',documentId:'d1',description:'Trasporto',amountCents:5000,vatIncluded:false},{id:'e2',documentId:'d1',description:'Installazione',amountCents:20000,vatIncluded:null}]};
+ let extraJob=await save(base);assert.equal(extraJob.extras.length,2);assert.equal(extraJob.extras[0].documentName,'Listino QA');assert.equal(extraJob.extras[0].supplierId,'s1');
+ for(const bad of [{amountCents:-1},{amountCents:1.5},{amountCents:1000000000001},{documentId:'missing'},{description:''}])await assert.rejects(()=>save({...extraJob,extras:[{...base.extras[0],...bad}]}));
+ await assert.rejects(()=>save({...extraJob,extras:[base.extras[0],base.extras[0]]}),/duplicati/);
+ assert.equal((await db.query("select version from procurement_jobs where id='extra-job'")).rows[0].version,1);
+ extraJob=await save({...extraJob,extras:[{...base.extras[0],amountCents:null}]});assert.equal(extraJob.extras[0].amountCents,null);
+ await assert.rejects(()=>save({...job,extras:base.extras}),/extra già ordinati/);
 });
 test('selected catalog history cannot be deleted while referenced by a saved job',async()=>{
  await assert.rejects(()=>db.query("delete from procurement_offer_history where offer_id='o1'"));
