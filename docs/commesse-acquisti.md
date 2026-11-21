@@ -89,6 +89,10 @@ e non finge salvataggi di commesse. Per gli archivi operativi serve Supabase.
 
 ## Collegamento all’archivio esistente
 
+Per attivare la creazione delle commesse con distinta materiali dai listini,
+vedere [Commesse operative](operational-jobs.md): la migrazione e il flag di
+salvataggio sono separati dalla modifica del catalogo.
+
 Per aggiornare o archiviare le singole voci dal sito, vedere
 [Modifica del catalogo](catalog-editing.md): migrazione e abilitazione dei
 salvataggi sono separate da quelle delle commesse.

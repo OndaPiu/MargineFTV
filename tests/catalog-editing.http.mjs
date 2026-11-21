@@ -14,7 +14,7 @@ const backend=http.createServer(async(req,res)=>{
 });
 backend.listen(0,'127.0.0.1');await once(backend,'listening');
 const base='http://127.0.0.1:5194',password=randomBytes(32).toString('hex');
-const env={...process.env,NODE_ENV:'production',PROCUREMENT_ACCESS_PASSWORD:password,PROCUREMENT_MODE:'read-only',PROCUREMENT_CATALOG_EDIT_ENABLED:'1',SUPABASE_URL:'http://127.0.0.1:'+backend.address().port,SUPABASE_SERVICE_ROLE_KEY:'synthetic-key'};
+const env={...process.env,NODE_ENV:'production',PROCUREMENT_ACCESS_PASSWORD:password,PROCUREMENT_MODE:'read-only',PROCUREMENT_JOBS_ENABLED:'0',PROCUREMENT_CATALOG_EDIT_ENABLED:'1',SUPABASE_URL:'http://127.0.0.1:'+backend.address().port,SUPABASE_SERVICE_ROLE_KEY:'synthetic-key'};
 for(const k of ['PROCUREMENT_CATALOG_GZIP_BASE64','PROCUREMENT_LOCAL_PREVIEW','PROCUREMENT_READ_ONLY_SOURCE_URL'])delete env[k];
 const child=spawn(process.execPath,['node_modules/next/dist/bin/next','start','--hostname','127.0.0.1','--port','5194'],{env,stdio:['ignore','pipe','pipe']});let logs='';child.stdout.on('data',c=>logs+=c);child.stderr.on('data',c=>logs+=c);
 try{

@@ -17,7 +17,7 @@ backend.listen(0,'127.0.0.1');await once(backend,'listening');
 const catalog={schemaVersion:1,suppliers:[{id:'qa',name:'Fornitore di prova',brands:[]}],
  documents:[{id:'doc'}],offers:[{id:'qa-item',label:'Prodotto di prova',description:'Dati sintetici',supplierId:'qa',documentId:'doc',purchasePriceCents:10000}]};
 const base='http://127.0.0.1:5192';const password=randomBytes(32).toString('hex');
-const env={...process.env,NODE_ENV:'production',PROCUREMENT_MODE:'read-only',PROCUREMENT_ACCESS_PASSWORD:password,
+const env={...process.env,NODE_ENV:'production',PROCUREMENT_MODE:'read-only',PROCUREMENT_JOBS_ENABLED:'0',PROCUREMENT_ACCESS_PASSWORD:password,
  PROCUREMENT_CATALOG_GZIP_BASE64:gzipSync(Buffer.from(JSON.stringify(catalog))).toString('base64'),
  SUPABASE_URL:'http://127.0.0.1:'+backend.address().port,SUPABASE_SERVICE_ROLE_KEY:'synthetic-test-key'};
 delete env.PROCUREMENT_LOCAL_PREVIEW;delete env.PROCUREMENT_READ_ONLY_SOURCE_URL;
