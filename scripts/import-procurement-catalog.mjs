@@ -11,7 +11,7 @@ for(const o of data.offers){
  ids.add(o.id);
  if(o.supplierId&&!data.suppliers.some(s=>s.id===o.supplierId))throw new Error('Fornitore non trovato.');
  if(!data.documents.some(d=>d.id===o.documentId))throw new Error('Documento non trovato.');
- if(o.listPriceCents!==null&&o.priceBasis==='gross'&&(o.discountPercent!==50||o.purchasePriceCents!==o.listPriceCents*.5))throw new Error('Sconto lordo non valido.');
+ if(o.listPriceCents!==null&&o.priceBasis==='gross'&&o.purchasePriceCents!==null&&(o.discountPercent===null||o.discountPercent<0||o.discountPercent>100||Math.abs(o.purchasePriceCents-o.listPriceCents*(1-o.discountPercent/100))>0.0001))throw new Error('Sconto lordo non valido.');
  if(o.priceBasis==='net'&&o.purchasePriceCents!==o.listPriceCents)throw new Error('Prezzo netto modificato.');
 }
 console.log(JSON.stringify({offers:data.offers.length,suppliers:data.suppliers.length,documents:data.documents.length,mode:args.includes('--apply')?'apply':'dry-run'}));
@@ -19,9 +19,10 @@ if(args.includes('--apply')){
  const base=process.env.SUPABASE_URL?.replace(/\/$/,'');const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
  if(!base||!key)throw new Error('Configura SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY.');
  delete data.extractionAudit;
- const response=await fetch(base+'/rest/v1/procurement_catalog?on_conflict=id',{method:'POST',
- headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},
- body:JSON.stringify({id:'main',data,updated_at:new Date().toISOString()})});
+ const response=await fetch(base+'/rest/v1/rpc/import_procurement_catalog',{method:'POST',
+ headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'},
+ body:JSON.stringify({p_catalog:data})});
  if(!response.ok)throw new Error('Importazione non riuscita: HTTP '+response.status);
- console.log('Catalogo importato. Nessuna pratica commerciale modificata.');
+ console.log(JSON.stringify(await response.json()));
+ console.log('Catalogo e tabelle collegate importati nella stessa transazione.');
 }

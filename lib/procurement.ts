@@ -6,6 +6,7 @@ export type Offer = {
  discountPercent:number|null; currency:string; vatIncluded:boolean|null; unit:string;
  documentId:string; documentDate:string|null; validUntil:string|null;
  validityStatus:string; stockStatus:string; page:number; review:string[]; verified:boolean;
+ shippingCents?:number|null; active?:boolean; manualUpdatedAt?:string;
 };
 export type Catalog = {
  schemaVersion:number;

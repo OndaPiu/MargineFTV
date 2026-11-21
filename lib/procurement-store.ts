@@ -1,6 +1,6 @@
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
-import type {Catalog,Job} from './procurement';
+import type {Catalog,Job,Offer} from './procurement';
 import {procurementReadOnly} from './procurement-mode.mjs';
 import {decodePrivateCatalog} from './procurement-catalog';
 const local=()=>process.env.NODE_ENV!=='production'&&process.env.PROCUREMENT_LOCAL_PREVIEW==='1';
@@ -13,11 +13,24 @@ export async function catalog():Promise<Catalog>{
  if(!data[0])throw new Error('Catalogo da importare.');
  return data[0].data;
 }
+export class CatalogUpdateError extends Error{
+ constructor(message:string,public status:number){super(message);}
+}
+export async function updateCatalogOffer(id:string,expected:Record<string,unknown>,changes:unknown):Promise<Offer>{
+ return request('rpc/update_procurement_offer',{method:'POST',body:JSON.stringify({p_offer_id:id,p_expected:expected,p_changes:changes})});
+}
 async function request(resource:string,init:RequestInit={}){
  const base=process.env.SUPABASE_URL?.replace(/\/$/,'');const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
  if(!base||!key)throw new Error('Archivio commesse non configurato.');
  const res=await fetch(base+'/rest/v1/'+resource,{...init,headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',...init.headers},cache:'no-store'});
- if(!res.ok)throw new Error('Archivio commesse non disponibile ('+res.status+'). Verifica la migrazione.');
+ if(!res.ok){
+  if(resource==='rpc/update_procurement_offer'){
+   if(res.status===409)throw new CatalogUpdateError('La voce è stata aggiornata. Ricarica il catalogo e riapri la scheda prima di salvare.',409);
+   if(res.status===404)throw new CatalogUpdateError('Voce non trovata o aggiornamento del catalogo non ancora installato.',404);
+   throw new CatalogUpdateError('Modifica non salvata. Controlla i dati e la configurazione del catalogo.',res.status===400?400:503);
+  }
+  throw new Error('Archivio commesse non disponibile ('+res.status+'). Verifica la migrazione.');
+ }
  const text=await res.text();return text?JSON.parse(text):null;
 }
 export async function allJobs():Promise<Job[]>{
