@@ -1,7 +1,8 @@
 'use client';
 import {useMemo,useState} from 'react';
 import {Plus,Search,X} from 'lucide-react';
-import {materialFromOffer,materialLineTotal,draftOrdersForMaterials,type Job,type Catalog,type Offer} from '../../lib/procurement';
+import JobExtras from './job-extras';
+import {materialFromOffer,materialLineTotal,jobCosts,draftOrdersForMaterials,type Job,type Catalog,type Offer} from '../../lib/procurement';
 const eur=(cents:number|null)=>cents===null?'Da quotare':new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR',maximumFractionDigits:3}).format(cents/100);
 export default function JobMaterials({job,catalog,today,onChange}:{job:Job;catalog:Catalog;today:string;onChange:(job:Job)=>void}){
  const [search,setSearch]=useState(''),[supplier,setSupplier]=useState(''),[page,setPage]=useState(0);
@@ -11,7 +12,7 @@ export default function JobMaterials({job,catalog,today,onChange}:{job:Job;catal
   return catalog.offers.filter(o=>o.active!==false&&(!supplier||o.supplierId===supplier)&&terms.every(t=>[o.label,o.code,o.brand,o.description,o.supplierName].join(' ').toLocaleLowerCase('it').includes(t)));
  },[catalog,search,supplier]);
  const groups=[...new Set(lines.map(m=>m.snapshot.supplierId))].map(id=>({id,lines:lines.filter(m=>m.snapshot.supplierId===id)}));
- const total=lines.reduce((sum,m)=>sum+(materialLineTotal(m)??0),0),incomplete=lines.some(m=>m.snapshot.unitPriceCents===null);
+ const costs=jobCosts(job);
  function add(o:Offer){
   const existing=lines.find(m=>m.offerId===o.id);
   const materials=existing?lines.map(m=>m.id===existing.id?{...m,quantity:Math.min(1000000,m.quantity+1)}:m):[...lines,materialFromOffer(o,catalog,crypto.randomUUID())];
@@ -38,8 +39,14 @@ export default function JobMaterials({job,catalog,today,onChange}:{job:Job;catal
    </article>;
   })}
   {!lines.length&&<p className="p-caption">Nessun materiale selezionato. Puoi salvare la commessa e completare la distinta in seguito.</p>}
-  {lines.length>0&&<><div className="p-material-total"><span>Totale materiali quotati</span><strong>{eur(total)}</strong></div>{incomplete&&<p className="p-warning">Il totale è incompleto: alcune voci sono ancora da quotare.</p>}<p className="p-caption">Trasporto escluso; le condizioni IVA sono indicate per ogni riga. Per aggiornare un prezzo prima dell’ordine, rimuovi la riga e seleziona di nuovo il prodotto.</p>
-   <div className="p-material-groups">{groups.map(g=><div key={g.id||'unknown'}><b>{g.lines[0].snapshot.supplierName}</b><span>{g.lines.length} voci · {eur(g.lines.reduce((sum,m)=>sum+(materialLineTotal(m)??0),0))}</span></div>)}</div>
+  <JobExtras job={job} catalog={catalog} onChange={onChange}/>
+  <div className="p-material-total"><span>Materiali quotati</span><strong>{eur(costs.materials)}</strong></div>
+  <div className="p-material-total"><span>Extra quotati</span><strong>{eur(costs.extras)}</strong></div>
+  <div className="p-material-total"><span>Totale costi commessa · materiali + extra</span><strong>{eur(costs.total)}</strong></div>
+  {costs.incomplete&&<p className="p-warning">Il totale è incompleto: alcuni materiali o extra sono ancora da quotare.</p>}
+  <p className="p-caption">Somma degli importi inseriti, senza conversione IVA: le condizioni sono indicate per ciascuna riga. Trasporto e installazione vanno aggiunti negli extra. Per aggiornare un prezzo prima dell’ordine, rimuovi la riga e seleziona di nuovo il prodotto.</p>
+  {lines.length>0&&<>
+   <div className="p-material-groups">{groups.map(g=><div key={g.id||'unknown'}><b>{g.lines[0].snapshot.supplierName}</b><span>{g.lines.length} materiali + extra · {eur(g.lines.reduce((sum,m)=>sum+(materialLineTotal(m)??0),0)+(job.extras||[]).filter(e=>(e.supplierId||catalog.documents.find(d=>d.id===e.documentId)?.supplierId)===g.id).reduce((sum,e)=>sum+(e.amountCents??0),0))}</span></div>)}</div>
    <button disabled={locked||!groups.some(g=>g.id)} onClick={()=>onChange({...job,orders:draftOrdersForMaterials(job)})}>Prepara ordini per fornitore</button><p className="p-caption">Crea soltanto le bozze nella commessa: nessun ordine viene inviato al fornitore.</p>
   </>}
  </section>;

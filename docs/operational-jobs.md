@@ -33,6 +33,26 @@ dell’ordine. Connessione Emmolo e avanzamento lavori richiedono anch’essi
 il primo incasso. Le fatture Enerp mantengono lo stato importato; un pagamento
 esterno richiede riferimento del documento e data effettiva non futura.
 
+## Extra per listino
+
+Nella commessa, **Extra per listino** permette di scegliere il listino e aggiungere
+più righe per trasporto, installazione o altri costi. Ogni riga ha descrizione,
+importo e condizione IVA. L'importo viene sommato una sola volta, senza essere
+moltiplicato per la quantità dei prodotti. Un importo vuoto resta da quotare;
+zero significa gratuito. Anche senza materiali si possono inserire extra.
+
+Il riepilogo mostra materiali, extra e totale dei costi inseriti. Non converte
+l'IVA: somme con condizioni IVA diverse richiedono verifica. Gli extra sono
+specifici della commessa e salvati in `procurement_jobs.data.extras`, con il
+listino e il fornitore verificati dal server. Dopo un ordine registrato restano
+bloccati insieme ai materiali. Un ordine richiede extra del fornitore quotati.
+Il campo Trasporto viene rimosso dalla modifica prodotto; eventuali dati storici
+rimangono conservati, senza essere aggiunti automaticamente al totale.
+
+Applicare `supabase/procurement-job-extras.sql` dopo la migrazione commesse e
+prima della pubblicazione di questa versione. Nessun dato esistente viene
+cancellato e nessun costo viene inventato o trasferito automaticamente.
+
 ## Archivio e attivazione
 
 1. Applicare `supabase/procurement-operational-jobs.sql` al progetto esistente,

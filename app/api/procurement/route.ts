@@ -18,6 +18,7 @@ const schema=z.object({id:z.string().min(1).max(300),practiceId:z.string().min(1
  connection:z.enum(['Da aprire','Aperta','In lavorazione','Completata']),works:z.enum(['Da avviare','In corso','Conclusi']),
  completedDate:date.optional(),
  materials:z.array(z.object({id:z.string().min(1).max(300),offerId:z.string().min(1).max(300),quantity:z.number().finite().positive('La quantità deve essere maggiore di zero.').max(1000000).refine(v=>Math.abs(v*1e6-Math.round(v*1e6))<0.001,'La quantità ammette al massimo sei decimali.'),expectedPriceCents:z.number().finite().min(0).nullable().optional(),snapshot:z.record(z.string(),z.unknown()).optional()})).max(500).default([]),
+ extras:z.array(z.object({id:z.string().min(1).max(300),documentId:z.string().min(1).max(300),description:z.string().trim().min(1).max(500),amountCents:z.number().int().min(0).max(1e12).nullable(),vatIncluded:z.boolean().nullable()})).max(100).default([]),
  orders:z.array(z.object({id:z.string().max(100),supplierId:z.string().max(100),reference:z.string().max(200),status:z.enum(['Da ordinare','Ordinato','Consegnato'])})).max(100),
  notes:z.string().max(10000)});
 async function commercialData(){

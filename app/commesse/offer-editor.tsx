@@ -14,7 +14,7 @@ function priceCents(value:string){
 export default function OfferEditor({offer,catalog,canSave,onClose,onSave}:{offer:Offer;catalog:Catalog;canSave:boolean;onClose:()=>void;onSave:(offer:Offer,changes:Changes)=>Promise<void>}){
  const [fields,setFields]=useState(()=>({label:offer.label,code:offer.code,brand:offer.brand||'',description:offer.description,
   category:offer.category,section:offer.section,supplierId:offer.supplierId||'',documentId:offer.documentId,page:String(offer.page),unit:offer.unit,
-  list:priceText(offer.listPriceCents),purchase:priceText(offer.purchasePriceCents),shipping:priceText(offer.shippingCents),
+  list:priceText(offer.listPriceCents),purchase:priceText(offer.purchasePriceCents),
   priceBasis:offer.priceBasis||'',discount:offer.discountPercent===null?'':String(offer.discountPercent),
   vat:offer.vatIncluded===null?'unknown':offer.vatIncluded?'included':'excluded',validUntil:offer.validUntil||'',
   validity:offer.validityStatus,stock:offer.stockStatus,review:offer.review.join('\n'),verified:offer.verified}));
@@ -30,7 +30,7 @@ export default function OfferEditor({offer,catalog,canSave,onClose,onSave}:{offe
    const changes={label:fields.label.trim(),code:fields.code.trim(),brand:fields.brand.trim()||null,description:fields.description,
     category:fields.category.trim(),section:fields.section.trim(),supplierId:fields.supplierId||null,documentId:fields.documentId,
     page:Number(fields.page),unit:fields.unit.trim(),currency:'EUR',listPriceCents:priceCents(fields.list),
-    purchasePriceCents:fields.priceBasis?computed:priceCents(fields.purchase),shippingCents:priceCents(fields.shipping),
+    purchasePriceCents:fields.priceBasis?computed:priceCents(fields.purchase),shippingCents:offer.shippingCents??null,
     priceBasis:fields.priceBasis||null,discountPercent:fields.discount===''?null:Number(fields.discount.replace(',','.')),
     vatIncluded:fields.vat==='unknown'?null:fields.vat==='included',validUntil:fields.validUntil||null,
     validityStatus:fields.validity,stockStatus:fields.stock,review:fields.review.split('\n').map(s=>s.trim()).filter(Boolean),verified:fields.verified};
@@ -56,7 +56,6 @@ export default function OfferEditor({offer,catalog,canSave,onClose,onSave}:{offe
     {input('list','Prezzo di listino (€)',{inputMode:'decimal'})}
     {input('discount','Sconto (%)',{inputMode:'decimal',disabled:fields.priceBasis!=='gross'})}
     {fields.priceBasis?<label>Prezzo di acquisto calcolato (€)<input readOnly value={priceText(computed)}/></label>:input('purchase','Prezzo di acquisto (€)',{inputMode:'decimal'})}
-    {input('shipping','Trasporto (€)',{inputMode:'decimal'})}
     <label>IVA<select value={fields.vat} onChange={e=>set('vat',e.target.value)}><option value="unknown">Da confermare</option><option value="excluded">IVA esclusa</option><option value="included">IVA inclusa</option></select></label>
     <label>Validità offerta<select value={fields.validity} onChange={e=>set('validity',e.target.value)}><option value="to-confirm">Da confermare</option><option value="dated">Con scadenza</option></select></label>
     {input('validUntil','Scadenza offerta',{type:'date',required:fields.validity==='dated'})}
