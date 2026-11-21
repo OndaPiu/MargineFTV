@@ -24,7 +24,12 @@ async function request(resource:string,init:RequestInit={}){
  if(!base||!key)throw new Error('Archivio commesse non configurato.');
  const res=await fetch(base+'/rest/v1/'+resource,{...init,headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',...init.headers},cache:'no-store'});
  if(!res.ok){
-  if(resource==='rpc/update_procurement_offer'){
+  if(resource==='rpc/update_procurement_offer'||resource==='rpc/save_procurement_job'){
+   if(resource==='rpc/save_procurement_job'){
+    if(res.status===409){const problem=await res.json().catch(()=>null) as {message?:unknown}|null;throw new CatalogUpdateError(typeof problem?.message==='string'&&problem.message.startsWith('Il prezzo del listino')?problem.message:'La commessa è cambiata. Ricarica i dati prima di salvare.',409);}
+    if(res.status===400){const problem=await res.json().catch(()=>null) as {message?:unknown}|null;throw new CatalogUpdateError(typeof problem?.message==='string'?problem.message:'Controlla i dati della commessa.',400);}
+    throw new CatalogUpdateError('Salvataggio commessa non disponibile. Verifica l’aggiornamento dell’archivio.',503);
+   }
    if(res.status===409)throw new CatalogUpdateError('La voce è stata aggiornata. Ricarica il catalogo e riapri la scheda prima di salvare.',409);
    if(res.status===404)throw new CatalogUpdateError('Voce non trovata o aggiornamento del catalogo non ancora installato.',404);
    throw new CatalogUpdateError('Modifica non salvata. Controlla i dati e la configurazione del catalogo.',res.status===400?400:503);
@@ -40,15 +45,7 @@ export async function allJobs():Promise<Job[]>{
 }
 export async function saveJob(job:Job){
  if(procurementReadOnly())throw new Error('Sezione in lavorazione: i salvataggi sono disabilitati.');
- const next={...job,version:job.version+1};
- if(job.version===0){
-  await request('procurement_jobs',{method:'POST',body:JSON.stringify({id:job.id,practice_id:job.practiceId,data:next,version:1})});
- }else{
-  const rows=await request('procurement_jobs?id=eq.'+encodeURIComponent(job.id)+'&version=eq.'+job.version,
-   {method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({data:next,version:next.version})});
-  if(!rows.length)throw new Error('La commessa è cambiata. Ricarica prima di salvare.');
- }
- return next;
+ return request('rpc/save_procurement_job',{method:'POST',body:JSON.stringify({p_job:job})});
 }
 export async function sourceDocument(id:string){
  const c=await catalog();const document=c.documents.find(d=>d.id===id);

@@ -3,10 +3,10 @@ import {authorized,authConfigured,correctPassword,sessionCookie,clearSessionCook
 import {allRecords} from '../../../lib/store';
 import {allJobs,catalog,localPreview,saveJob,updateCatalogOffer,CatalogUpdateError} from '../../../lib/procurement-store';
 import {offerMutation,catalogEditingEnabled} from '../../../lib/procurement-catalog-edit';
-import {eligiblePractice,validateJob,withCompletionDate,type OperationalInvoice,type OperationalPractice,type Job} from '../../../lib/procurement';
+import {eligiblePractice,validateJob,validateMaterialChanges,withCompletionDate,type OperationalInvoice,type OperationalPractice,type Job} from '../../../lib/procurement';
 import {romeDate} from '../../../lib/model';
 import {realPreviewEnabled,realPreviewData} from '../../../lib/procurement-preview';
-import {procurementReadOnly,hostedReadOnly} from '../../../lib/procurement-mode.mjs';
+import {procurementReadOnly} from '../../../lib/procurement-mode.mjs';
 export const dynamic='force-dynamic';
 const headers={'Cache-Control':'no-store, private','Vary':'Cookie'};
 const json=(data:unknown,status=200,extra:Record<string,string>={})=>Response.json(data,{status,headers:{...headers,...extra}});
@@ -17,6 +17,7 @@ const schema=z.object({id:z.string().min(1).max(300),practiceId:z.string().min(1
  manualReference:z.string().max(200),manualPaidDate:date})).min(1).max(3),
  connection:z.enum(['Da aprire','Aperta','In lavorazione','Completata']),works:z.enum(['Da avviare','In corso','Conclusi']),
  completedDate:date.optional(),
+ materials:z.array(z.object({id:z.string().min(1).max(300),offerId:z.string().min(1).max(300),quantity:z.number().finite().positive('La quantità deve essere maggiore di zero.').max(1000000).refine(v=>Math.abs(v*1e6-Math.round(v*1e6))<0.001,'La quantità ammette al massimo sei decimali.'),expectedPriceCents:z.number().finite().min(0).nullable().optional(),snapshot:z.record(z.string(),z.unknown()).optional()})).max(500).default([]),
  orders:z.array(z.object({id:z.string().max(100),supplierId:z.string().max(100),reference:z.string().max(200),status:z.enum(['Da ordinare','Ordinato','Consegnato'])})).max(100),
  notes:z.string().max(10000)});
 async function commercialData(){
@@ -30,7 +31,7 @@ export async function GET(req:Request){
  if(!authorized(req))return json({authenticated:false,configured:authConfigured()},401);
  try{
   const [data,jobs,commercial]=await Promise.all([catalog(),allJobs(),commercialData()]);
-  return json({authenticated:true,localPreview:localPreview(),readOnly:procurementReadOnly(),catalogEditable:catalogEditingEnabled(),liveData:realPreviewEnabled()||hostedReadOnly(),catalog:data,jobs,...commercial});
+  return json({authenticated:true,localPreview:localPreview(),readOnly:procurementReadOnly(),catalogEditable:catalogEditingEnabled(),liveData:realPreviewEnabled()||!localPreview(),catalog:data,jobs,...commercial});
  }catch{return json({error:'Dati non disponibili. Configura archivio, migrazione e catalogo.'},503);}
 }
 export async function POST(req:Request){
@@ -64,6 +65,7 @@ export async function POST(req:Request){
    const dated=withCompletionDate(existing,job,romeDate());
    if(dated.completedDate&&dated.completedDate>romeDate())throw new Error('La data effettiva di fine lavori non può essere futura.');
    validateJob(dated,invoices);
+   validateMaterialChanges(existing,dated);
    return json({job:await saveJob(dated)});
   }
   return json({error:'Azione non disponibile.'},400);

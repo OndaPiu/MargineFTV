@@ -26,9 +26,36 @@ export type Job={
  connection:'Da aprire'|'Aperta'|'In lavorazione'|'Completata';
  works:'Da avviare'|'In corso'|'Conclusi';
  completedDate?:string;
+ materials?:JobMaterial[];
  orders:{id:string;supplierId:string;reference:string;status:'Da ordinare'|'Ordinato'|'Consegnato'}[];
  notes:string;
 };
+export type JobMaterial={id:string;offerId:string;quantity:number;snapshot:MaterialSnapshot};
+export type MaterialSnapshot={
+ label:string;code:string;brand:string|null;description:string;supplierId:string|null;supplierName:string;
+ unit:string;unitPriceCents:number|null;currency:string;vatIncluded:boolean|null;documentId:string;documentName:string;page?:number;
+ validUntil:string|null;validityStatus:string;stockStatus:string;review:string[];verified:boolean;selectedAt:string;
+};
+export function materialFromOffer(offer:Offer,catalog:Catalog,id:string,quantity=1):JobMaterial{
+ if(offer.active===false)throw new Error('Il prodotto è archiviato.');
+ return {id,offerId:offer.id,quantity,snapshot:{label:offer.label,code:offer.code,brand:offer.brand,description:offer.description,
+  supplierId:offer.supplierId,supplierName:offer.supplierName,unit:offer.unit,unitPriceCents:offer.purchasePriceCents,currency:offer.currency,
+  vatIncluded:offer.vatIncluded,documentId:offer.documentId,documentName:catalog.documents.find(d=>d.id===offer.documentId)?.name||'',page:offer.page,
+  validUntil:offer.validUntil,validityStatus:offer.validityStatus,stockStatus:offer.stockStatus,review:[...offer.review],verified:offer.verified,selectedAt:new Date().toISOString()}};
+}
+export function materialLineTotal(m:JobMaterial){return m.snapshot.unitPriceCents===null?null:Math.round(m.snapshot.unitPriceCents*m.quantity);}
+export function draftOrdersForMaterials(job:Job):Job['orders']{
+ const orders=[...job.orders];
+ for(const m of job.materials||[])if(m.snapshot.supplierId&&!orders.some(o=>o.supplierId===m.snapshot.supplierId))
+  orders.push({id:crypto.randomUUID(),supplierId:m.snapshot.supplierId,reference:'',status:'Da ordinare'});
+ return orders;
+}
+export function validateMaterialChanges(previous:Job|undefined,next:Job){
+ if(previous?.orders.some(o=>o.status!=='Da ordinare')){
+  const select=(job:Job)=>(job.materials||[]).map(m=>({id:m.id,offerId:m.offerId,quantity:m.quantity})).sort((a,b)=>a.id.localeCompare(b.id));
+  if(JSON.stringify(select(previous))!==JSON.stringify(select(next)))throw new Error('I materiali di una commessa già ordinata richiedono una revisione dell’ordine.');
+ }
+}
 export function eligiblePractice(p:Pick<OperationalPractice,'practiceStatus'>){
  return ['vinta','won'].includes(normalizeCommercialLabel(p.practiceStatus));
 }
